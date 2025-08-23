@@ -18,7 +18,19 @@ export class ApiClient {
   private headers: HeadersInit;
 
   constructor() {
-    this.baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8787';
+    // In production, the API is served from the same domain
+    // In development, use the local Wrangler server
+    // NOTE: Don't use .env.local for production builds!
+    if (import.meta.env.VITE_API_URL && !import.meta.env.PROD) {
+      // Use VITE_API_URL only in development
+      this.baseUrl = import.meta.env.VITE_API_URL;
+    } else if (import.meta.env.PROD) {
+      // In production, use relative URLs (same domain)
+      this.baseUrl = '';
+    } else {
+      // Fallback for local development
+      this.baseUrl = 'http://localhost:8787';
+    }
     
     this.headers = {
       'Content-Type': 'application/json',

@@ -24,9 +24,17 @@ interface Bindings {
 // Create Hono app
 const app = new Hono<{ Bindings: Bindings }>();
 
-// Enable CORS for frontend
+// Enable CORS for frontend - includes common Vite dev server ports
 app.use('*', cors({
-  origin: ['http://localhost:5173', 'http://localhost:3000'],
+  origin: [
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'http://localhost:5174', 
+    'http://localhost:5175',
+    'http://localhost:5176',
+    'http://localhost:5177',
+    'http://localhost:5178'
+  ],
   credentials: true,
 }));
 
@@ -124,7 +132,7 @@ app.put('/api/todos/:id', async (c) => {
     
     // Build dynamic update query
     const updates: string[] = [];
-    const values: any[] = [];
+    const values: (string | number)[] = [];
     
     if (body.text !== undefined) {
       updates.push('text = ?');

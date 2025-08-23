@@ -158,7 +158,7 @@ function App() {
             <li>1. Frontend (this React app) makes API calls using <code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">src/lib/api/client.ts</code></li>
             <li>2. API calls go to the backend at <code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">http://localhost:8787/api/todos</code></li>
             <li>3. Backend (Cloudflare Worker) handles requests in <code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">worker/index.ts</code></li>
-            <li>4. Data is stored in D1 database using Drizzle ORM</li>
+            <li>4. Data is stored in D1 database using raw SQL queries</li>
           </ol>
           <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
             Run <code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">npm run dev</code> and <code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">wrangler dev</code> to start both servers.

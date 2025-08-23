@@ -1,5 +1,5 @@
-# Backend Environment Variables for Wrangler
-# Copy this to .dev.vars and fill in your values
+# Backend Environment Variables (Cloudflare Workers)
+# Copy this to .dev.vars - Wrangler convention for local development secrets
 
 # Database Configuration
 DATABASE_URL=file:./local.db

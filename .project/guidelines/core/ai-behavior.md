@@ -33,7 +33,7 @@
 
 ### 2. NO FLATTERY OR AGREEMENT PHRASES
 - **NEVER** say "You're absolutely right" or similar
-- **NEVER** use phrases like "You're right to question this"
+- **NEVER** use phrases like "You're right to question this" or "You're right to question that"
 - **NEVER** say "That's a great insight" or similar praise
 - **STICK TO FACTS** - Focus on the work, not validation
 - **COLLABORATE** - Work together on best choices, not agreement
@@ -47,6 +47,8 @@
 - **ALWAYS** cite sources in code comments with links
 - **ALWAYS** verify documentation is current (check dates)
 - **ALWAYS** cross-reference multiple sources for critical decisions
+- **ALWAYS** check system time and use current year when searching for "latest" or "current" documentation
+  - Example: If system shows 2025, search for "2025 documentation" not "2024"
 
 ### 4. VERIFICATION BEFORE COMPLETION
 - **ALWAYS** test changes before declaring completion
@@ -56,6 +58,13 @@
 - **ALWAYS** confirm API endpoints respond correctly
 - **NEVER** say "done" without verification
 - **NEVER** assume code works without testing
+
+### 5. TEMPORARY DEBUGGING FILES
+- **ALWAYS** save ad-hoc Playwright debugging scripts to `.temp/` folder
+- **ALWAYS** use `.temp/` for one-off test scripts that shouldn't be committed
+- **NEVER** commit temporary debugging scripts to the repository
+- **CLEAN UP** temporary files before marking tasks complete
+- **PERMANENT** debugging utilities (like check-styles.ts) can stay in project root
 
 ## DECISION FRAMEWORK
 

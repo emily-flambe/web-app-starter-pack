@@ -2,8 +2,8 @@
 
 ## Local Development Environment
 
-> **Note**: We use native Wrangler development without Docker for optimal performance.
-> See [local-development-strategy.md](./local-development-strategy.md) for detailed rationale.
+> **Note**: We use native Wrangler development for optimal performance.
+> See [local-development.md](./local-development.md) for detailed setup.
 
 ### Quick Start
 

@@ -19,6 +19,24 @@ test-results/
 playwright-report/
 playwright/.cache/
 
+# Temporary files and debugging scripts
+.temp/
+*.temp.ts
+*.temp.js
+
+# Images in root directory
+/*.jpg
+/*.jpeg
+/*.png
+/*.gif
+/*.svg
+/*.webp
+/*.ico
+/*.bmp
+/*.tiff
+
+screenshots/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document outlines our approach to local development, prioritizing **native Wrangler development** without Docker containerization. This strategy provides the fastest iteration cycles, simplest setup, and maintains full portability for future architecture changes.
+This document outlines our approach to local development using **native Wrangler development**. This strategy provides the fastest iteration cycles, simplest setup, and maintains full portability for future architecture changes.
 
 ## Core Philosophy
 
@@ -128,44 +128,7 @@ npm run test:e2e
 npm run test:api
 ```
 
-## Docker: When We Use It
-
-While we don't use Docker for local development, we DO use it for:
-
-1. **CI/CD Pipelines**: Consistent build environments
-2. **VS Code Dev Containers**: Optional for developers who prefer it
-3. **Complex Services**: If we add services that require Docker
-
-### Optional VS Code Dev Container
-
-For developers who prefer containerized environments:
-
-`.devcontainer/devcontainer.json`:
-```json
-{
-  "name": "Web App Starter Pack",
-  "image": "mcr.microsoft.com/devcontainers/typescript-node:20",
-  "features": {
-    "ghcr.io/devcontainers/features/github-cli:1": {}
-  },
-  "postCreateCommand": "npm install",
-  "customizations": {
-    "vscode": {
-      "extensions": [
-        "bradlc.vscode-tailwindcss",
-        "esbenp.prettier-vscode"
-      ]
-    }
-  }
-}
-```
-
 ## Comparison with Alternatives
-
-### Docker Containerization
-- ❌ **Pros**: Consistent environment, no local Node.js
-- ❌ **Cons**: Slower iteration, complex setup, obscures runtime
-- **Verdict**: Solves problems we don't have
 
 ### Native Wrangler (Our Choice)
 - ✅ **Pros**: Fast iteration, simple setup, exact production runtime
@@ -183,10 +146,10 @@ If we need to change our approach:
 
 ## Performance Benchmarks
 
-| Metric | Native Wrangler | Docker Alternative |
-|--------|----------------|-------------------|
-| Initial startup | ~3 seconds | ~30 seconds |
-| Hot reload | <100ms | ~6 seconds |
+| Metric | Native Wrangler |
+|--------|----------------|
+| Initial startup | ~3 seconds |
+| Hot reload | <100ms |
 | Memory usage | ~200MB | ~800MB |
 | Debug access | Direct | Through proxy |
 
