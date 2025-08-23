@@ -221,16 +221,13 @@ wrangler deploy --env staging # Deploy to staging
 #### Frontend (.env.local)
 ```bash
 VITE_API_URL=http://localhost:8787
-VITE_AUTH0_DOMAIN=your-domain.auth0.com
-VITE_AUTH0_CLIENT_ID=your-client-id
-VITE_AUTH0_AUDIENCE=your-audience
+# Add your environment variables here
 ```
 
 #### Backend (.dev.vars)
 ```bash
-AUTH0_DOMAIN=your-domain.auth0.com
-AUTH0_API_AUDIENCE=your-audience
-AUTH0_API_CLIENT_SECRET=your-secret
+# Add your Cloudflare Worker secrets here
+# Example: DATABASE_URL, API_KEYS, etc.
 ```
 
 ## 🚢 Deployment
@@ -247,9 +244,9 @@ npm run build
 wrangler deploy
 ```
 
-3. **Set production secrets:**
+3. **Set production secrets (if any):**
 ```bash
-wrangler secret put AUTH0_API_CLIENT_SECRET
+# Example: wrangler secret put API_SECRET
 ```
 
 ### Deploy to Other Platforms
@@ -266,16 +263,36 @@ The architecture is designed for portability. To deploy to Vercel, Netlify, or o
 - **Backend**: Cloudflare Workers, Hono framework
 - **Database**: Cloudflare D1 (SQLite), Drizzle ORM
 - **Testing**: Vitest, React Testing Library, Playwright
-- **Auth**: Auth0
 - **Mocking**: Mock Service Worker (MSW)
+
+### Pre-installed Libraries
+
+The following commonly-needed libraries are included but not yet configured:
+- **React Router DOM**: Client-side routing for multi-page SPAs
+- **TanStack Query (React Query)**: Data fetching and server state management
 
 ## 🔒 Security
 
 - Environment variables for secrets
-- Auth0 integration ready
+- Authentication ready (configure your preferred provider)
 - CORS configuration
 - Input validation
 - SQL injection prevention via ORM
+
+### Generating Secrets
+
+For JWT tokens or other secrets, generate secure random values:
+
+```bash
+# Generate a JWT secret
+openssl rand -base64 32
+
+# Or using Node.js
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+
+# Set it in your local environment
+echo "JWT_SECRET=$(openssl rand -base64 32)" >> .dev.vars
+```
 
 ## 📄 License
 
