@@ -127,6 +127,33 @@ We use **native Wrangler development** without Docker containerization for:
 
 See [.project/specs/setup/local-development-strategy.md](.project/specs/setup/local-development-strategy.md) for detailed rationale.
 
+## 🧪 Testing
+
+The starter pack includes two testing frameworks for comprehensive coverage:
+
+### Unit Testing with Jest
+- **Platform-agnostic**: Works with any bundler (Vite, Webpack, etc.)
+- **Fast and reliable**: Industry-standard testing framework
+- **React Testing Library**: For component testing
+- **Located in**: `src/**/*.test.tsx` files
+
+```bash
+npm run test          # Run all unit tests
+npm run test:watch    # Watch mode for development
+```
+
+### E2E Testing with Playwright
+- **Cross-browser**: Tests in Chrome, Firefox, Safari, and mobile
+- **Real browser testing**: Not just simulated
+- **Visual debugging**: UI mode for debugging tests
+- **Located in**: `e2e/` directory
+
+```bash
+npm run test:e2e      # Run all E2E tests
+npm run test:e2e:ui   # Open Playwright UI for debugging
+npx playwright install  # Install browsers (first time only)
+```
+
 ## 🎯 Where to Implement Your Code
 
 ### Frontend Implementation
@@ -201,9 +228,10 @@ npm run db:push         # Push schema changes
 npm run db:studio       # Open Drizzle Studio
 
 # Testing
-npm run test           # Run unit tests
-npm run test:e2e       # Run E2E tests
-npm run test:coverage  # Generate coverage report
+npm run test           # Run unit tests with Jest
+npm run test:watch     # Run Jest in watch mode
+npm run test:e2e       # Run E2E tests with Playwright
+npm run test:e2e:ui    # Open Playwright UI mode
 
 # Building
 npm run build          # Build for production
@@ -262,8 +290,8 @@ The architecture is designed for portability. To deploy to Vercel, Netlify, or o
 - **Frontend**: React 18, TypeScript, Vite, Tailwind CSS
 - **Backend**: Cloudflare Workers, Hono framework
 - **Database**: Cloudflare D1 (SQLite), Drizzle ORM
-- **Testing**: Vitest, React Testing Library, Playwright
-- **Mocking**: Mock Service Worker (MSW)
+- **Unit Testing**: Jest, React Testing Library (platform-agnostic)
+- **E2E Testing**: Playwright (cross-browser)
 
 ### Pre-installed Libraries
 
