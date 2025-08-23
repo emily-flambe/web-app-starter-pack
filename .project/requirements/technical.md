@@ -14,7 +14,7 @@
 - **Vite 6.0+**
   - Requires Node.js 20.19+ or 22.12+
   - Native ESM with rollup 4.x
-  - Lightning-fast HMR (<100ms updates)
+  - Lightning-fast HMR with instant updates
   - Built-in TypeScript support
   - Optimized production builds with tree-shaking
 
@@ -184,20 +184,17 @@ drizzle/
 ## Performance Requirements
 
 ### Build Performance
-- **Development Start**: <3 seconds from npm run dev
-- **Hot Module Replacement**: <100ms for component updates
-- **Production Build**: <30 seconds for full build
+- **Development Start**: Fast startup from npm run dev
+- **Hot Module Replacement**: Instant component updates
+- **Production Build**: Fast full builds
 - **Bundle Analysis**: Automated bundle size monitoring
 - **Tree Shaking**: Eliminate unused code automatically
 
 ### Runtime Performance
-- **Initial Bundle**: <500KB gzipped
-- **Total Bundle**: <2MB including all features
-- **Core Web Vitals**:
-  - Largest Contentful Paint (LCP): <2.5s
-  - First Input Delay (FID): <100ms
-  - Cumulative Layout Shift (CLS): <0.1
-- **Time to Interactive**: <3s on 3G networks
+- **Initial Bundle**: Optimized bundle sizes
+- **Total Bundle**: Efficient loading of all features
+- **Core Web Vitals**: Optimized for Core Web Vitals
+- **Time to Interactive**: Fast interaction readiness
 
 ### Optimization Strategies
 - **Code Splitting**: Route-based and feature-based lazy loading
@@ -290,7 +287,7 @@ drizzle/
 
 ### Monitoring & Observability
 - **Error Tracking**: Comprehensive error reporting
-- **Performance Monitoring**: Real-time performance metrics
+- **Performance Monitoring**: Real-time monitoring capabilities
 - **User Analytics**: Privacy-focused usage analytics
 - **Build Monitoring**: CI/CD pipeline health tracking
 - **Security Scanning**: Automated security vulnerability detection

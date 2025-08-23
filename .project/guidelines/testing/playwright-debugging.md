@@ -169,18 +169,19 @@ await page.locator('.header').screenshot({
 
 **Solution Using Playwright:**
 ```typescript
-// Measure page load time
-const startTime = Date.now();
+// Navigate to the application
 await page.goto('http://localhost:5173');
-const loadTime = Date.now() - startTime;
-console.log(`Page loaded in ${loadTime}ms`);
 
-// Check for performance metrics
-const metrics = await page.evaluate(() => ({
-  domContentLoaded: performance.timing.domContentLoadedEventEnd - performance.timing.navigationStart,
-  loaded: performance.timing.loadEventEnd - performance.timing.navigationStart,
-}));
-console.log('Performance metrics:', metrics);
+// Verify page loaded successfully
+const title = await page.title();
+console.log('Page title:', title);
+
+// Check for any console errors
+page.on('console', msg => {
+  if (msg.type() === 'error') {
+    console.error('Console error:', msg.text());
+  }
+});
 ```
 
 ## Advanced Techniques

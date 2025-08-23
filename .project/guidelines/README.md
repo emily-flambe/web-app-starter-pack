@@ -5,37 +5,34 @@ This directory contains all development guidelines, standards, and best practice
 ## Directory Structure
 
 ### Core Guidelines
-- **[ai-behavior.md](./core/ai-behavior.md)** - Critical rules for AI assistants working on this project
-- **[project-principles.md](./core/project-principles.md)** - Core principles and philosophies
+- **[ai-behavior.md](core/ai-behavior.md)** - Critical rules for AI assistants working on this project
+- **[project-principles.md](core/project-principles.md)** - Core principles and philosophies
 
 ### Development
-- **[development-workflow.md](./development/development-workflow.md)** - Git workflow, environment setup, and development process
-- **[local-development.md](./development/local-development.md)** - Local development strategy using native Wrangler
-- **[deployment-strategy.md](./development/deployment-strategy.md)** - Cloudflare Workers deployment and platform abstraction
+- **[development-workflow.md](development/development-workflow.md)** - Git workflow, environment setup, and development process
+- **[local-development.md](development/local-development.md)** - Local development strategy using native Wrangler
+- **[deployment-strategy.md](development/deployment-strategy.md)** - Cloudflare Workers deployment and platform abstraction
 
 ### Language Standards
-- **[typescript-standards.md](./languages/typescript-standards.md)** - TypeScript coding standards and patterns
-- **[react-standards.md](./languages/react-standards.md)** - React 19 component patterns and best practices  
-- **[python-standards.md](./languages/python-standards.md)** - Python/FastAPI backend standards
+- **[typescript-standards.md](languages/typescript-standards.md)** - TypeScript coding standards and patterns
+- **[react-standards.md](languages/react-standards.md)** - React 19 component patterns and best practices  
+- **[python-standards.md](languages/python-standards.md)** - Python/FastAPI backend standards
 
 ### Testing & Quality
-- **[tdd-approach.md](./testing/tdd-approach.md)** - Test-driven development methodology
-- **[playwright-debugging.md](./testing/playwright-debugging.md)** - Browser automation debugging guide
-- **[troubleshooting.md](./testing/troubleshooting.md)** - Common issues and solutions
+- **[tdd-approach.md](testing/tdd-approach.md)** - Test-driven development methodology
+- **[playwright-debugging.md](testing/playwright-debugging.md)** - Browser automation debugging guide
+- **[troubleshooting.md](testing/troubleshooting.md)** - Common issues and solutions
 
 ## Quick Reference
 
 ### Priority Order
-1. **ALWAYS READ FIRST**: [ai-behavior.md](./core/ai-behavior.md) - Contains critical security and quality rules
-2. **Development Setup**: [local-development.md](./development/local-development.md)
+1. **ALWAYS READ FIRST**: [ai-behavior.md](core/ai-behavior.md) - Contains critical security and quality rules
+2. **Development Setup**: [local-development.md](development/local-development.md)
 3. **Language Standards**: Based on what you're working on
-4. **Testing**: [tdd-approach.md](./testing/tdd-approach.md) for test requirements
+4. **Testing**: [tdd-approach.md](testing/tdd-approach.md) for test requirements
 
 ### Key Principles
-- **NO SECRETS IN CODE** - Use environment variables
-- **NO EMOJIS IN CODE** - Keep it professional
-- **TEST BEFORE MARKING COMPLETE** - Verify everything works
-- **FOLLOW EXISTING PATTERNS** - Consistency over personal preference
+See [ai-behavior.md](core/ai-behavior.md) for complete list of critical rules and principles.
 
 ### Development Commands
 ```bash

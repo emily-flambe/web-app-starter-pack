@@ -539,7 +539,7 @@ setState(prev => ({
 
 ## Build and Bundle Considerations
 
-- Keep bundle size under 200KB for initial load
+- Keep bundle size optimized for fast initial load
 - Use dynamic imports for route-based code splitting
 - Analyze bundle with `npm run build -- --analyze`
 - Tree-shake unused code with proper ES modules

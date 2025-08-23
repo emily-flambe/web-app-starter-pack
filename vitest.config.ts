@@ -9,10 +9,10 @@ export default defineConfig({
     setupFiles: './src/__tests__/setup.ts',
     include: ['src/__tests__/**/*.{test,spec}.{ts,tsx}'],
     coverage: {
-      reporter: ['text', 'json', 'html'],
+      reporter: ['text', 'json', 'html', 'lcov'],
       exclude: [
         'node_modules/',
-        'src/test/',
+        'src/__tests__/',
         '*.config.ts',
         'src/main.tsx',
         'src/vite-env.d.ts',

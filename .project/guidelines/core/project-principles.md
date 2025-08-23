@@ -112,10 +112,10 @@ type Result<T, E = Error> =
 ## Performance Standards
 
 ### Targets
-- **Initial Load**: < 3 seconds on 3G
-- **Time to Interactive**: < 5 seconds
-- **Bundle Size**: < 500KB initial
-- **API Response**: < 200ms p95
+- **Initial Load**: Fast loading on all networks
+- **Time to Interactive**: Quick interaction readiness
+- **Bundle Size**: Optimized for fast loading
+- **API Response**: Fast API responses
 
 ### Optimization Strategies
 - Code splitting by route

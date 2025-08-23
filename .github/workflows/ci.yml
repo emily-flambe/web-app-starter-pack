@@ -1,13 +1,20 @@
-name: CI
+name: CI/CD Pipeline
 
 on:
   push:
     branches: [main, develop]
   pull_request:
-    branches: [main, develop]
+    types: [opened, synchronize, reopened]
+
+# Cancel in-progress runs when a new commit is pushed
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  lint-and-type-check:
+  # Step 1: Quick checks (fail fast)
+  lint-and-format:
+    name: Lint & Format Check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -24,13 +31,12 @@ jobs:
       - name: Run ESLint
         run: npm run lint
       
-      - name: Type check
-        run: npm run type-check
-      
-      - name: Format check
+      - name: Check formatting
         run: npm run format -- --check
 
-  unit-tests:
+  # Step 2: Type checking (can run in parallel)
+  type-check:
+    name: TypeScript Check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -44,46 +50,42 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
-      - name: Run unit tests
-        run: npm run test -- --coverage
+      - name: Type check
+        run: npm run type-check
+
+  # Step 3: Unit & Integration tests
+  test-unit:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
       
-      - name: Upload coverage
-        uses: codecov/codecov-action@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run unit tests with coverage
+        run: npm run test:coverage
+      
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage/lcov.info
           flags: unittests
-          name: codecov-umbrella
+          name: unit-coverage
+          fail_ci_if_error: false
 
-  e2e-tests:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: '.nvmrc'
-          cache: 'npm'
-      
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps
-      
-      - name: Run E2E tests
-        run: npm run test:e2e
-      
-      - name: Upload Playwright report
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: playwright-report
-          path: playwright-report/
-          retention-days: 30
-
+  # Step 4: Build the application
   build:
+    name: Build Application
     runs-on: ubuntu-latest
+    needs: [lint-and-format, type-check]
     steps:
       - uses: actions/checkout@v4
       
@@ -98,6 +100,8 @@ jobs:
       
       - name: Build application
         run: npm run build
+        env:
+          NODE_ENV: production
       
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -105,3 +109,158 @@ jobs:
           name: dist
           path: dist/
           retention-days: 7
+
+  # Step 5: E2E tests (only on builds that pass)
+  test-e2e:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    needs: [build]
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Install Playwright
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+      
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      
+      - name: Run E2E tests
+        run: npm run test:e2e -- --project=${{ matrix.browser }}
+      
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report-${{ matrix.browser }}
+          path: playwright-report/
+          retention-days: 30
+
+  # Step 6: Deploy preview for PRs
+  deploy-preview:
+    name: Deploy Preview
+    runs-on: ubuntu-latest
+    needs: [build, test-unit]
+    if: github.event_name == 'pull_request'
+    permissions:
+      pull-requests: write
+      deployments: write
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      
+      - name: Create GitHub deployment
+        uses: chrnorm/deployment-action@v2
+        id: deployment
+        with:
+          token: ${{ github.token }}
+          environment-url: https://pr-${{ github.event.pull_request.number }}-web-app-starter-pack.workers.dev
+          environment: preview
+          ref: ${{ github.event.pull_request.head.sha }}
+      
+      - name: Deploy to Cloudflare Workers
+        id: deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy --env preview --var PREVIEW_NUMBER:${{ github.event.pull_request.number }}
+      
+      - name: Update deployment status
+        uses: chrnorm/deployment-status@v2
+        if: always()
+        with:
+          token: ${{ github.token }}
+          environment-url: ${{ steps.deploy.outputs.deployment-url }}
+          deployment-id: ${{ steps.deployment.outputs.deployment_id }}
+          state: ${{ job.status }}
+      
+      - name: Comment PR with preview URL
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const url = '${{ steps.deploy.outputs.deployment-url }}';
+            const body = `🚀 **Preview Deployed!**
+            
+            Visit the preview: ${url}
+            
+            | Check | Status |
+            |-------|--------|
+            | Build | ✅ Passed |
+            | Unit Tests | ✅ Passed |
+            | Preview | ✅ Deployed |
+            
+            *Preview will be updated automatically on new commits.*`;
+            
+            // Find and update existing comment or create new one
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('Preview Deployed!')
+            );
+            
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body
+              });
+            }
+
+  # Final status check
+  ci-status:
+    name: CI Status
+    runs-on: ubuntu-latest
+    needs: [lint-and-format, type-check, test-unit, build, test-e2e]
+    if: always()
+    steps:
+      - name: Check CI status
+        run: |
+          if [[ "${{ contains(needs.*.result, 'failure') }}" == "true" ]]; then
+            echo "CI failed"
+            exit 1
+          else
+            echo "CI passed"
+          fi

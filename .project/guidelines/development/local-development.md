@@ -144,14 +144,14 @@ If we need to change our approach:
 3. **Migration time**: < 1 hour
 4. **No architectural impact**: Deployment stays the same
 
-## Performance Benchmarks
+## Development Experience
 
-| Metric | Native Wrangler |
+| Aspect | Native Wrangler |
 |--------|----------------|
-| Initial startup | ~3 seconds |
-| Hot reload | <100ms |
-| Memory usage | ~200MB | ~800MB |
-| Debug access | Direct | Through proxy |
+| Initial startup | Fast |
+| Hot reload | Instant |
+| Memory usage | Efficient |
+| Debug access | Direct |
 
 ## Common Issues & Solutions
 
