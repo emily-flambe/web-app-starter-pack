@@ -1,0 +1,13 @@
+# Backend Environment Variables for Wrangler
+# Copy this to .dev.vars and fill in your values
+
+# Auth0 Configuration (optional)
+AUTH0_DOMAIN=your-domain.auth0.com
+AUTH0_API_AUDIENCE=your-audience
+AUTH0_API_CLIENT_SECRET=your-secret
+
+# Database Configuration
+DATABASE_URL=file:./local.db
+
+# External API Keys (add as needed)
+# EXTERNAL_API_KEY=your-api-key
