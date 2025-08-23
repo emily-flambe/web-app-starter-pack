@@ -2,6 +2,9 @@
 
 ## Local Development Environment
 
+> **Note**: We use native Wrangler development without Docker for optimal performance.
+> See [local-development-strategy.md](./local-development-strategy.md) for detailed rationale.
+
 ### Quick Start
 
 ```bash
@@ -32,11 +35,18 @@ open http://localhost:5173
 ### Environment Setup
 
 #### Prerequisites
-- **Node.js**: 18+ LTS (20.x or 22.x recommended)
+- **Node.js**: 20.11.0 (managed via nvm and `.nvmrc`)
+- **nvm**: Node Version Manager
 - **npm**: 9+ or **pnpm**: 8+ (recommended)
 - **Git**: 2.x+
 - **Wrangler CLI**: `npm install -g wrangler`
 - **VS Code**: Latest with recommended extensions
+
+#### Node Version Management
+```bash
+# Ensure consistent Node version
+nvm use  # Reads from .nvmrc
+```
 
 #### Environment Variables
 ```bash

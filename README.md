@@ -8,6 +8,11 @@ A production-ready starter template for building modern web applications with Re
 # Clone and install
 git clone https://github.com/your-org/web-app-starter-pack.git
 cd web-app-starter-pack
+
+# Use correct Node version
+nvm use
+
+# Install dependencies
 npm install
 
 # Set up environment variables
@@ -27,10 +32,11 @@ npx drizzle-kit studio   # Terminal 3: Database GUI (optional)
 
 ## 📋 Prerequisites
 
-- Node.js 18+ (LTS recommended)
-- npm 9+ or pnpm 8+
-- [Cloudflare account](https://dash.cloudflare.com/sign-up) (free tier available)
-- Wrangler CLI: `npm install -g wrangler`
+- **nvm** (Node Version Manager) - [Install guide](https://github.com/nvm-sh/nvm#installing-and-updating)
+- **Node.js 20.11.0** - Managed via nvm and `.nvmrc`
+- **npm 9+** or **pnpm 8+**
+- **[Cloudflare account](https://dash.cloudflare.com/sign-up)** (free tier available)
+- **Wrangler CLI**: `npm install -g wrangler`
 
 ## 🛠️ Cloudflare Workers Setup
 
@@ -110,6 +116,16 @@ web-app-starter-pack/
 ├── wrangler.toml           # Cloudflare Workers configuration
 └── drizzle.config.ts       # Drizzle ORM configuration
 ```
+
+## 💻 Local Development Philosophy
+
+We use **native Wrangler development** without Docker containerization for:
+- **10x faster startup** than containerized alternatives
+- **Sub-second hot reload** for rapid iteration
+- **Direct Chrome DevTools access** for debugging
+- **Exact production runtime** via `workerd`
+
+See [.project/specs/setup/local-development-strategy.md](.project/specs/setup/local-development-strategy.md) for detailed rationale.
 
 ## 🎯 Where to Implement Your Code
 

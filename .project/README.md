@@ -16,6 +16,7 @@
 - Tech Stack: See `requirements/technical.md`
 - Common Issues: See `guidelines/troubleshooting.md`
 - Development Workflow: See `specs/setup/development-workflow.md`
+- Local Development Strategy: See `specs/setup/local-development-strategy.md`
 
 ## Project Overview
 A production-ready starter template for rapidly building modern web applications. This starter pack provides a solid foundation with authentication, routing, state management, and deployment infrastructure pre-configured.
