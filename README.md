@@ -1,33 +1,25 @@
 # Web App Starter Pack
 
-A production-ready starter template for building modern web applications with React, TypeScript, and Cloudflare Workers.
+A production-ready monorepo starter for professionals who need a battle-tested stack without the setup overhead. Everything you need, nothing you don't.
 
 ## 🚀 Quick Start
 
 ```bash
-# Clone and install
+# One-command setup
+make setup
+
+# Start everything
+make dev
+```
+
+Or manually:
+```bash
 git clone https://github.com/your-org/web-app-starter-pack.git
 cd web-app-starter-pack
-
-# Use correct Node version
 nvm use
-
-# Install dependencies
 npm install
-
-# Set up environment variables
 cp .env.example .env.local
 cp .dev.vars.example .dev.vars
-
-# Set up Cloudflare Workers (see detailed instructions below)
-npm install -g wrangler
-wrangler login
-wrangler d1 create app-database
-
-# Start development (3 terminals)
-npm run dev              # Terminal 1: Frontend (http://localhost:5173)
-wrangler dev             # Terminal 2: Backend (http://localhost:8787)
-npx drizzle-kit studio   # Terminal 3: Database GUI (optional)
 ```
 
 ## 📋 Prerequisites
@@ -287,11 +279,21 @@ The architecture is designed for portability. To deploy to Vercel, Netlify, or o
 
 ## 📚 Technology Stack
 
+### Core
 - **Frontend**: React 18, TypeScript, Vite, Tailwind CSS
 - **Backend**: Cloudflare Workers, Hono framework
 - **Database**: Cloudflare D1 (SQLite), Drizzle ORM
+
+### Testing
 - **Unit Testing**: Jest, React Testing Library (platform-agnostic)
 - **E2E Testing**: Playwright (cross-browser)
+
+### CI/CD & DevOps
+- **CI/CD**: GitHub Actions (lint, test, build, deploy)
+- **Security**: CodeQL, Gitleaks, npm audit
+- **Dependencies**: Dependabot auto-updates
+- **Containerization**: Docker & Docker Compose
+- **Git Hooks**: Pre-commit checks (optional)
 
 ### Pre-installed Libraries
 
@@ -325,6 +327,37 @@ echo "JWT_SECRET=$(openssl rand -base64 32)" >> .dev.vars
 ## 📄 License
 
 MIT License - see [LICENSE](LICENSE) file for details.
+
+## 🚀 CI/CD Pipeline
+
+### GitHub Actions Workflows
+
+**Automatic on every push:**
+- `.github/workflows/ci.yml` - Linting, type checking, unit tests, E2E tests
+- `.github/workflows/security.yml` - CodeQL analysis, dependency audit, secrets scanning
+
+**Automatic on main branch:**
+- `.github/workflows/deploy.yml` - Deploy to Cloudflare Workers
+
+### Required GitHub Secrets
+```
+CLOUDFLARE_API_TOKEN    # Your Cloudflare API token
+CLOUDFLARE_ACCOUNT_ID   # Your Cloudflare account ID
+```
+
+### Setting Up Deployment
+
+1. Get your Cloudflare credentials:
+   ```bash
+   wrangler login
+   # Note your account ID from the output
+   ```
+
+2. Create an API token at https://dash.cloudflare.com/profile/api-tokens
+
+3. Add secrets to your GitHub repository:
+   - Go to Settings → Secrets → Actions
+   - Add `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`
 
 ## 🆘 Getting Help
 

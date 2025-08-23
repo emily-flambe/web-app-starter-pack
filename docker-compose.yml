@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: .
+      target: builder
+    command: npm run dev
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+    networks:
+      - app-network
+
+  api:
+    build:
+      context: .
+      target: runner
+    command: wrangler dev --local --port 8787 --ip 0.0.0.0
+    ports:
+      - "8787:8787"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+    env_file:
+      - .dev.vars
+    networks:
+      - app-network
+
+  db-studio:
+    image: node:20-alpine
+    working_dir: /app
+    command: npm run db:studio
+    ports:
+      - "5555:5555"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    networks:
+      - app-network
+    profiles:
+      - tools
+
+networks:
+  app-network:
+    driver: bridge
