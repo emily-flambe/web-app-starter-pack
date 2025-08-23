@@ -14,8 +14,8 @@ export function WizardExample() {
   const totalSteps = 4;
 
   // TODO: Replace with your own form data structure
-  const [formData, setFormData] = useState({
-    // Add your fields here
+  const [formData] = useState({
+    // TODO: Add your fields here and setFormData when needed
   });
 
   const handleNext = () => {
