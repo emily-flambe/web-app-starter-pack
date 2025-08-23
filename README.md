@@ -12,6 +12,12 @@ make setup
 make dev
 ```
 
+The starter includes a **working Todo app example** that demonstrates:
+- Frontend making API calls to backend
+- Backend handling CRUD operations  
+- Database persistence (D1 SQLite or PostgreSQL)
+- Full TypeScript type safety
+
 Or manually:
 ```bash
 git clone https://github.com/your-org/web-app-starter-pack.git

@@ -1,15 +1,14 @@
 # Web App Starter Pack - Project Documentation
 
 ## For AI Assistants
-**MANDATORY**: Read ALL files in `.project/` before starting work, especially:
-1. `guidelines/ai-behavior.md` - Critical behavioral rules
-2. `requirements/overview.md` - What we're building
-3. `requirements/technical.md` - How we're building it
-4. `guidelines/tdd-approach.md` - Testing philosophy
-5. `guidelines/troubleshooting.md` - Common issues
-6. `guidelines/typescript-standards.md` - TypeScript coding standards
-7. `guidelines/react-standards.md` - React patterns and practices
-8. `guidelines/python-standards.md` - Python coding standards (if backend in Python)
+**MANDATORY**: Read these directories before starting work:
+1. `guidelines/` - ALL files - Critical behavioral rules and standards
+2. `requirements/` - ALL files - What we're building and how
+
+**DO NOT READ** unless specifically requested:
+- `docs/` - Reference documentation for humans, migration guides, etc.
+  - Only read these when user asks about specific migrations or advanced topics
+  - These are ad-hoc usage documents, not project requirements
 
 ## For Humans
 - Requirements: See `requirements/overview.md`  

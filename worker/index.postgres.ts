@@ -1,65 +1,55 @@
 /**
- * Cloudflare Worker API - Todo App Example
+ * Cloudflare Worker with PostgreSQL (Neon) Example
  * 
- * This demonstrates a simple REST API with CRUD operations
+ * To use this instead of D1:
+ * 1. Sign up for Neon: https://neon.tech
+ * 2. Create a database and get your connection string
+ * 3. Add to .dev.vars: DATABASE_URL=postgresql://...
+ * 4. Install: npm install @neondatabase/serverless drizzle-orm
+ * 5. Rename this file to index.ts
  */
 
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { drizzle } from 'drizzle-orm/d1';
-import { todos, type Todo, type NewTodo } from '../drizzle/schema';
+import { neon } from '@neondatabase/serverless';
+import { drizzle } from 'drizzle-orm/neon-http';
+import { todos, type Todo, type NewTodo } from '../drizzle/schema.postgres';
 import { eq } from 'drizzle-orm';
 
-// Define your environment bindings
+// Environment bindings for PostgreSQL
 type Bindings = {
-  DB: D1Database;
+  DATABASE_URL: string;  // PostgreSQL connection string
 };
 
-// Create Hono app with typed bindings
 const app = new Hono<{ Bindings: Bindings }>();
 
-// Enable CORS for frontend
+// Enable CORS
 app.use('*', cors({
   origin: ['http://localhost:5173', 'http://localhost:3000'],
   credentials: true,
 }));
 
-// Health check endpoint
+// Health check
 app.get('/api/health', (c) => {
   return c.json({ 
     status: 'ok',
     timestamp: new Date().toISOString(),
-    message: 'Todo API is running'
+    message: 'Todo API with PostgreSQL is running'
   });
 });
 
 // Get all todos
 app.get('/api/todos', async (c) => {
   try {
-    const db = drizzle(c.env.DB);
-    const allTodos = await db.select().from(todos).all();
+    // Connect to PostgreSQL via Neon
+    const sql = neon(c.env.DATABASE_URL);
+    const db = drizzle(sql);
+    
+    const allTodos = await db.select().from(todos);
     return c.json(allTodos);
   } catch (error) {
     console.error('Error fetching todos:', error);
     return c.json({ error: 'Failed to fetch todos' }, 500);
-  }
-});
-
-// Get single todo
-app.get('/api/todos/:id', async (c) => {
-  try {
-    const id = parseInt(c.req.param('id'));
-    const db = drizzle(c.env.DB);
-    const [todo] = await db.select().from(todos).where(eq(todos.id, id)).limit(1);
-    
-    if (!todo) {
-      return c.json({ error: 'Todo not found' }, 404);
-    }
-    
-    return c.json(todo);
-  } catch (error) {
-    console.error('Error fetching todo:', error);
-    return c.json({ error: 'Failed to fetch todo' }, 500);
   }
 });
 
@@ -72,13 +62,13 @@ app.post('/api/todos', async (c) => {
       return c.json({ error: 'Text is required' }, 400);
     }
     
-    const db = drizzle(c.env.DB);
-    const newTodo: NewTodo = {
-      text: body.text.trim(),
-      completed: false,
-    };
+    const sql = neon(c.env.DATABASE_URL);
+    const db = drizzle(sql);
     
-    const [created] = await db.insert(todos).values(newTodo).returning();
+    const [created] = await db.insert(todos)
+      .values({ text: body.text.trim() })
+      .returning();
+    
     return c.json(created, 201);
   } catch (error) {
     console.error('Error creating todo:', error);
@@ -92,16 +82,15 @@ app.put('/api/todos/:id', async (c) => {
     const id = parseInt(c.req.param('id'));
     const body = await c.req.json<{ text?: string; completed?: boolean }>();
     
-    const db = drizzle(c.env.DB);
-    const updates: Partial<Todo> = {
-      ...(body.text !== undefined && { text: body.text }),
-      ...(body.completed !== undefined && { completed: body.completed }),
-      updatedAt: new Date(),
-    };
+    const sql = neon(c.env.DATABASE_URL);
+    const db = drizzle(sql);
     
-    const [updated] = await db
-      .update(todos)
-      .set(updates)
+    const [updated] = await db.update(todos)
+      .set({
+        ...(body.text !== undefined && { text: body.text }),
+        ...(body.completed !== undefined && { completed: body.completed }),
+        updatedAt: new Date(),
+      })
       .where(eq(todos.id, id))
       .returning();
     
@@ -120,10 +109,11 @@ app.put('/api/todos/:id', async (c) => {
 app.delete('/api/todos/:id', async (c) => {
   try {
     const id = parseInt(c.req.param('id'));
-    const db = drizzle(c.env.DB);
     
-    const [deleted] = await db
-      .delete(todos)
+    const sql = neon(c.env.DATABASE_URL);
+    const db = drizzle(sql);
+    
+    const [deleted] = await db.delete(todos)
       .where(eq(todos.id, id))
       .returning();
     
@@ -138,12 +128,10 @@ app.delete('/api/todos/:id', async (c) => {
   }
 });
 
-// 404 handler
 app.notFound((c) => {
   return c.json({ error: 'Not found' }, 404);
 });
 
-// Error handler
 app.onError((err, c) => {
   console.error('Error:', err);
   return c.json({ error: 'Internal server error' }, 500);

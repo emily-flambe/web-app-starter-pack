@@ -1,8 +1,17 @@
 /**
  * API Client for backend communication
  * 
- * TODO: Extend this client with your specific API methods
+ * This example shows how to communicate with the Cloudflare Worker backend
  */
+
+// Todo type matching backend schema
+export interface Todo {
+  id: number;
+  text: string;
+  completed: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 export class ApiClient {
   private baseUrl: string;
@@ -13,17 +22,6 @@ export class ApiClient {
     
     this.headers = {
       'Content-Type': 'application/json',
-    };
-  }
-
-  /**
-   * Set authorization header
-   * TODO: Call this after user authentication
-   */
-  setAuthToken(token: string) {
-    this.headers = {
-      ...this.headers,
-      'Authorization': `Bearer ${token}`,
     };
   }
 
@@ -41,69 +39,78 @@ export class ApiClient {
   /**
    * Health check endpoint
    */
-  async checkHealth(): Promise<{ status: string; timestamp: string }> {
+  async checkHealth(): Promise<{ status: string; timestamp: string; message: string }> {
     const response = await fetch(`${this.baseUrl}/api/health`, {
       headers: this.headers,
     });
     return this.handleResponse(response);
   }
 
+  // ============================================
+  // Todo CRUD Operations - Example Implementation
+  // ============================================
+
   /**
-   * Generic GET request
-   * TODO: Use this as a template for your GET endpoints
+   * Get all todos
    */
-  async get<T>(endpoint: string): Promise<T> {
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
-      method: 'GET',
+  async getTodos(): Promise<Todo[]> {
+    const response = await fetch(`${this.baseUrl}/api/todos`, {
       headers: this.headers,
     });
-    return this.handleResponse<T>(response);
+    return this.handleResponse<Todo[]>(response);
   }
 
   /**
-   * Generic POST request
-   * TODO: Use this as a template for your POST endpoints
+   * Get single todo
    */
-  async post<T>(endpoint: string, data: any): Promise<T> {
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+  async getTodo(id: number): Promise<Todo> {
+    const response = await fetch(`${this.baseUrl}/api/todos/${id}`, {
+      headers: this.headers,
+    });
+    return this.handleResponse<Todo>(response);
+  }
+
+  /**
+   * Create a new todo
+   */
+  async createTodo(text: string): Promise<Todo> {
+    const response = await fetch(`${this.baseUrl}/api/todos`, {
       method: 'POST',
       headers: this.headers,
-      body: JSON.stringify(data),
+      body: JSON.stringify({ text }),
     });
-    return this.handleResponse<T>(response);
+    return this.handleResponse<Todo>(response);
   }
 
   /**
-   * Generic PUT request
-   * TODO: Use this as a template for your PUT endpoints
+   * Update a todo
    */
-  async put<T>(endpoint: string, data: any): Promise<T> {
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+  async updateTodo(id: number, updates: { text?: string; completed?: boolean }): Promise<Todo> {
+    const response = await fetch(`${this.baseUrl}/api/todos/${id}`, {
       method: 'PUT',
       headers: this.headers,
-      body: JSON.stringify(data),
+      body: JSON.stringify(updates),
     });
-    return this.handleResponse<T>(response);
+    return this.handleResponse<Todo>(response);
   }
 
   /**
-   * Generic DELETE request
-   * TODO: Use this as a template for your DELETE endpoints
+   * Delete a todo
    */
-  async delete<T>(endpoint: string): Promise<T> {
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+  async deleteTodo(id: number): Promise<{ message: string }> {
+    const response = await fetch(`${this.baseUrl}/api/todos/${id}`, {
       method: 'DELETE',
       headers: this.headers,
     });
-    return this.handleResponse<T>(response);
+    return this.handleResponse<{ message: string }>(response);
   }
 
-  // TODO: Add your specific API methods here
-  // Examples:
-  // async getUsers() { return this.get<User[]>('/api/users'); }
-  // async createUser(user: CreateUserDto) { return this.post<User>('/api/users', user); }
-  // async updateUser(id: string, user: UpdateUserDto) { return this.put<User>(`/api/users/${id}`, user); }
-  // async deleteUser(id: string) { return this.delete<void>(`/api/users/${id}`); }
+  /**
+   * Toggle todo completion status
+   */
+  async toggleTodo(id: number, completed: boolean): Promise<Todo> {
+    return this.updateTodo(id, { completed });
+  }
 }
 
 // Export singleton instance
