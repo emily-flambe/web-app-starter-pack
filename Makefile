@@ -13,13 +13,16 @@ help:
 
 # Initial setup
 setup:
-	@echo "Setting up project..."
-	cp .env.example .env.local
-	cp .dev.vars.example .dev.vars
-	npm install
-	npx playwright install
-	./scripts/setup-hooks.sh
-	@echo "✅ Setup complete! Edit .env.local and .dev.vars with your values"
+	@echo "Starting interactive setup..."
+	@./setup.sh
+
+# Quick setup (non-interactive)
+setup-quick:
+	@./scripts/quick-setup.sh
+
+# CI setup (for automated environments)
+setup-ci:
+	@./scripts/setup-ci.sh
 
 # Install dependencies
 install:
@@ -28,10 +31,7 @@ install:
 
 # Development
 dev:
-	@echo "Starting development servers..."
-	@echo "Frontend: http://localhost:5173"
-	@echo "Backend:  http://localhost:8787"
-	npm run dev & wrangler dev
+	@./scripts/dev.sh
 
 # Testing
 test:
@@ -68,14 +68,11 @@ deploy-production:
 	wrangler deploy --env production
 
 # Database
-db-generate:
-	npm run db:generate
+db-init:
+	npm run db:init
 
-db-push:
-	npm run db:push
-
-db-studio:
-	npm run db:studio
+db-seed:
+	npm run db:seed
 
 # Docker
 docker-up:

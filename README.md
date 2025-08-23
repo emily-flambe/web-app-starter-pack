@@ -4,29 +4,59 @@ A production-ready monorepo starter for professionals who need a battle-tested s
 
 ## 🚀 Quick Start
 
+### Automated Setup (Recommended)
+
 ```bash
-# One-command setup
+# Run the interactive setup script
+./setup.sh
+
+# This will:
+# ✓ Check prerequisites (Node.js, npm, Wrangler)
+# ✓ Install dependencies
+# ✓ Set up environment files
+# ✓ Authenticate with Cloudflare
+# ✓ Create and configure D1 database
+# ✓ Initialize database schema
+# ✓ Build frontend assets
+# ✓ Optionally start dev servers
+```
+
+### Alternative Setup Methods
+
+```bash
+# Quick setup for experienced users
+./scripts/quick-setup.sh
+
+# Or use Make
 make setup
 
+# Or manual setup
+npm install
+cp .env.example .env.local
+cp .dev.vars.example .dev.vars
+npx wrangler d1 create app-database
+# Update wrangler.toml with database ID
+npx wrangler d1 execute app-database --local --file=./db/schema.sql
+npm run build
+```
+
+### Start Development
+
+```bash
 # Start everything
 make dev
+
+# Or run separately
+npm run dev              # Frontend on http://localhost:5173
+npx wrangler dev        # Backend on http://localhost:8787
 ```
 
 The starter includes a **working Todo app example** that demonstrates:
 - Frontend making API calls to backend
 - Backend handling CRUD operations  
-- Database persistence (D1 SQLite or PostgreSQL)
+- Database persistence with D1 (SQLite at the edge)
 - Full TypeScript type safety
-
-Or manually:
-```bash
-git clone https://github.com/your-org/web-app-starter-pack.git
-cd web-app-starter-pack
-nvm use
-npm install
-cp .env.example .env.local
-cp .dev.vars.example .dev.vars
-```
+- No ORM complexity - just SQL
 
 ## 📋 Prerequisites
 
@@ -79,14 +109,14 @@ database_id = "YOUR_DATABASE_ID_HERE"  # <-- Paste your ID here
 
 ### 5. Initialize Database Schema
 ```bash
-# Generate initial migration
-npx drizzle-kit generate
+# Create tables in local database
+npm run db:init
 
-# Apply to local database
-wrangler d1 migrations apply app-database --local
+# Add sample data (optional)
+npm run db:seed
 
-# Apply to remote database (when ready for production)
-wrangler d1 migrations apply app-database --remote
+# For production database
+wrangler d1 execute app-database --remote --file=./db/schema.sql
 ```
 
 ## 🏗️ Project Structure
@@ -94,25 +124,19 @@ wrangler d1 migrations apply app-database --remote
 ```
 web-app-starter-pack/
 ├── src/                      # Frontend React application
-│   ├── components/          # Reusable UI components
-│   ├── features/           # Feature modules
 │   ├── lib/               # Utilities and abstractions
-│   │   ├── api/          # API client
-│   │   ├── auth/         # Authentication
-│   │   └── db/           # Database abstraction layer
-│   ├── hooks/            # Custom React hooks
-│   ├── types/            # TypeScript type definitions
-│   └── routes/           # Application routing
+│   │   └── api/          # API client
+│   └── App.tsx           # Main app with todo example
 ├── worker/                   # Cloudflare Worker backend
-│   ├── index.ts          # API entry point
-│   └── db/               # Database repositories
-├── drizzle/                  # Database configuration
-│   ├── schema.ts         # Database schema
-│   └── migrations/       # Auto-generated migrations
+│   └── index.ts          # API with todo endpoints
+├── db/                       # Database files
+│   ├── schema.sql        # Database schema
+│   └── seed.sql          # Sample data
+├── e2e/                      # Playwright E2E tests
+├── .github/                  # CI/CD workflows
 ├── .env.example             # Frontend environment template
 ├── .dev.vars.example        # Backend environment template
-├── wrangler.toml           # Cloudflare Workers configuration
-└── drizzle.config.ts       # Drizzle ORM configuration
+└── wrangler.toml           # Cloudflare Workers configuration
 ```
 
 ## 💻 Local Development Philosophy
@@ -221,9 +245,8 @@ wrangler dev            # Start Worker dev server
 npm run dev:mock        # Start with MSW mocks
 
 # Database
-npm run db:generate     # Generate migrations
-npm run db:push         # Push schema changes
-npm run db:studio       # Open Drizzle Studio
+npm run db:init         # Create database tables
+npm run db:seed         # Add sample data
 
 # Testing
 npm run test           # Run unit tests with Jest
@@ -277,18 +300,21 @@ wrangler deploy
 
 ### Deploy to Other Platforms
 
-The architecture is designed for portability. To deploy to Vercel, Netlify, or other platforms:
+The architecture is designed for portability, though some Cloudflare-specific code will need updating:
 
-1. Update the API client to use the appropriate endpoints
-2. Configure platform-specific environment variables
-3. Follow the platform's deployment guide
+1. **Remove Cloudflare dependencies** (`@cloudflare/workers-types`)
+2. **Replace D1 database** with PostgreSQL or your preferred database
+3. **Convert Worker API** to Express, serverless functions, or platform router
+4. **Update environment variable access** from `c.env` to `process.env`
+
+See [Cloudflare to Other Platforms Migration Guide](.project/docs/migration-guides/cloudflare-to-other-platforms.md) for detailed instructions.
 
 ## 📚 Technology Stack
 
 ### Core
 - **Frontend**: React 18, TypeScript, Vite, Tailwind CSS
 - **Backend**: Cloudflare Workers, Hono framework
-- **Database**: Cloudflare D1 (SQLite), Drizzle ORM
+- **Database**: Cloudflare D1 (SQLite at the edge)
 
 ### Testing
 - **Unit Testing**: Jest, React Testing Library (platform-agnostic)

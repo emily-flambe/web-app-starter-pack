@@ -1,21 +1,27 @@
 /**
  * Cloudflare Worker API - Todo App Example
  * 
- * This demonstrates a simple REST API with CRUD operations
+ * This demonstrates a simple REST API using raw D1 (no ORM)
  */
 
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { drizzle } from 'drizzle-orm/d1';
-import { todos, type Todo, type NewTodo } from '../drizzle/schema';
-import { eq } from 'drizzle-orm';
 
-// Define your environment bindings
-type Bindings = {
+// TypeScript types for our data
+interface Todo {
+  id: number;
+  text: string;
+  completed: number;  // SQLite uses 0/1 for booleans
+  created_at: number;
+  updated_at: number;
+}
+
+// Environment bindings
+interface Bindings {
   DB: D1Database;
-};
+}
 
-// Create Hono app with typed bindings
+// Create Hono app
 const app = new Hono<{ Bindings: Bindings }>();
 
 // Enable CORS for frontend
@@ -36,9 +42,17 @@ app.get('/api/health', (c) => {
 // Get all todos
 app.get('/api/todos', async (c) => {
   try {
-    const db = drizzle(c.env.DB);
-    const allTodos = await db.select().from(todos).all();
-    return c.json(allTodos);
+    const { results } = await c.env.DB.prepare(
+      'SELECT * FROM todos ORDER BY created_at DESC'
+    ).all<Todo>();
+    
+    // Convert SQLite integers to booleans for frontend
+    const todos = results.map((todo: Todo) => ({
+      ...todo,
+      completed: todo.completed === 1
+    }));
+    
+    return c.json(todos);
   } catch (error) {
     console.error('Error fetching todos:', error);
     return c.json({ error: 'Failed to fetch todos' }, 500);
@@ -49,14 +63,19 @@ app.get('/api/todos', async (c) => {
 app.get('/api/todos/:id', async (c) => {
   try {
     const id = parseInt(c.req.param('id'));
-    const db = drizzle(c.env.DB);
-    const [todo] = await db.select().from(todos).where(eq(todos.id, id)).limit(1);
+    
+    const todo = await c.env.DB.prepare(
+      'SELECT * FROM todos WHERE id = ?'
+    ).bind(id).first<Todo>();
     
     if (!todo) {
       return c.json({ error: 'Todo not found' }, 404);
     }
     
-    return c.json(todo);
+    return c.json({
+      ...todo,
+      completed: todo.completed === 1
+    });
   } catch (error) {
     console.error('Error fetching todo:', error);
     return c.json({ error: 'Failed to fetch todo' }, 500);
@@ -72,14 +91,25 @@ app.post('/api/todos', async (c) => {
       return c.json({ error: 'Text is required' }, 400);
     }
     
-    const db = drizzle(c.env.DB);
-    const newTodo: NewTodo = {
+    const now = Math.floor(Date.now() / 1000);
+    const result = await c.env.DB.prepare(
+      'INSERT INTO todos (text, completed, created_at, updated_at) VALUES (?, ?, ?, ?)'
+    ).bind(body.text.trim(), 0, now, now).run();
+    
+    if (!result.success) {
+      throw new Error('Failed to insert todo');
+    }
+    
+    // Return the created todo
+    const newTodo = {
+      id: result.meta.last_row_id,
       text: body.text.trim(),
       completed: false,
+      created_at: now,
+      updated_at: now
     };
     
-    const [created] = await db.insert(todos).values(newTodo).returning();
-    return c.json(created, 201);
+    return c.json(newTodo, 201);
   } catch (error) {
     console.error('Error creating todo:', error);
     return c.json({ error: 'Failed to create todo' }, 500);
@@ -92,24 +122,48 @@ app.put('/api/todos/:id', async (c) => {
     const id = parseInt(c.req.param('id'));
     const body = await c.req.json<{ text?: string; completed?: boolean }>();
     
-    const db = drizzle(c.env.DB);
-    const updates: Partial<Todo> = {
-      ...(body.text !== undefined && { text: body.text }),
-      ...(body.completed !== undefined && { completed: body.completed }),
-      updatedAt: new Date(),
-    };
+    // Build dynamic update query
+    const updates: string[] = [];
+    const values: any[] = [];
     
-    const [updated] = await db
-      .update(todos)
-      .set(updates)
-      .where(eq(todos.id, id))
-      .returning();
+    if (body.text !== undefined) {
+      updates.push('text = ?');
+      values.push(body.text);
+    }
     
-    if (!updated) {
+    if (body.completed !== undefined) {
+      updates.push('completed = ?');
+      values.push(body.completed ? 1 : 0);
+    }
+    
+    if (updates.length === 0) {
+      return c.json({ error: 'No updates provided' }, 400);
+    }
+    
+    // Always update the timestamp
+    updates.push('updated_at = ?');
+    values.push(Math.floor(Date.now() / 1000));
+    
+    // Add the ID at the end for the WHERE clause
+    values.push(id);
+    
+    const result = await c.env.DB.prepare(
+      `UPDATE todos SET ${updates.join(', ')} WHERE id = ?`
+    ).bind(...values).run();
+    
+    if (result.meta.changes === 0) {
       return c.json({ error: 'Todo not found' }, 404);
     }
     
-    return c.json(updated);
+    // Fetch and return the updated todo
+    const updated = await c.env.DB.prepare(
+      'SELECT * FROM todos WHERE id = ?'
+    ).bind(id).first<Todo>();
+    
+    return c.json({
+      ...updated,
+      completed: updated!.completed === 1
+    });
   } catch (error) {
     console.error('Error updating todo:', error);
     return c.json({ error: 'Failed to update todo' }, 500);
@@ -120,14 +174,12 @@ app.put('/api/todos/:id', async (c) => {
 app.delete('/api/todos/:id', async (c) => {
   try {
     const id = parseInt(c.req.param('id'));
-    const db = drizzle(c.env.DB);
     
-    const [deleted] = await db
-      .delete(todos)
-      .where(eq(todos.id, id))
-      .returning();
+    const result = await c.env.DB.prepare(
+      'DELETE FROM todos WHERE id = ?'
+    ).bind(id).run();
     
-    if (!deleted) {
+    if (result.meta.changes === 0) {
       return c.json({ error: 'Todo not found' }, 404);
     }
     

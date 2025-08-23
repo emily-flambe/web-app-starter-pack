@@ -1,6 +1,6 @@
 # Migrating from D1 (SQLite) to PostgreSQL
 
-This guide covers migrating from Cloudflare D1 to PostgreSQL across different deployment platforms.
+This guide covers migrating from Cloudflare D1 (using raw SQL) to PostgreSQL across different deployment platforms.
 
 ## Why Migrate?
 
@@ -9,6 +9,7 @@ This guide covers migrating from Cloudflare D1 to PostgreSQL across different de
 - Simple applications
 - Read-heavy workloads
 - Zero configuration
+- Raw SQL simplicity
 
 **PostgreSQL is better for:**
 - Complex queries and relationships
@@ -16,6 +17,7 @@ This guide covers migrating from Cloudflare D1 to PostgreSQL across different de
 - Advanced features (JSON, full-text search, extensions)
 - Legacy application compatibility
 - Multi-region replication
+- Existing PostgreSQL codebases
 
 ## PostgreSQL Provider Options
 
@@ -46,7 +48,7 @@ This guide covers migrating from Cloudflare D1 to PostgreSQL across different de
 
 ## Migration Steps by Platform
 
-### Cloudflare Workers + Neon
+### Cloudflare Workers + Neon (Raw SQL)
 
 #### 1. Set up Neon
 ```bash
@@ -57,46 +59,166 @@ This guide covers migrating from Cloudflare D1 to PostgreSQL across different de
 
 #### 2. Install Dependencies
 ```bash
-npm install @neondatabase/serverless drizzle-orm
+npm install @neondatabase/serverless
 ```
 
-#### 3. Update Schema
-```typescript
-// drizzle/schema.ts
-// Change from SQLite imports:
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+#### 3. Update Schema (SQL Changes)
 
-// To PostgreSQL imports:
-import { pgTable, serial, text, boolean, timestamp } from 'drizzle-orm/pg-core';
+The main differences between D1 (SQLite) and PostgreSQL SQL:
 
-// Update table definition:
-export const todos = pgTable('todos', {
-  id: serial('id').primaryKey(),  // serial instead of integer
-  text: text('text').notNull(),
-  completed: boolean('completed').notNull().default(false),  // boolean instead of integer
-  createdAt: timestamp('created_at').notNull().defaultNow(),  // timestamp instead of integer
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
-});
+**D1 Schema (SQLite):**
+```sql
+-- db/schema.sql (current)
+CREATE TABLE todos (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  text TEXT NOT NULL,
+  completed INTEGER NOT NULL DEFAULT 0,
+  created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+  updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
+);
+
+CREATE INDEX idx_todos_completed ON todos(completed);
+CREATE INDEX idx_todos_created_at ON todos(created_at DESC);
 ```
 
-#### 4. Update Worker
+**PostgreSQL Schema:**
+```sql
+-- db/schema.postgresql.sql (new)
+CREATE TABLE todos (
+  id SERIAL PRIMARY KEY,                      -- SERIAL instead of INTEGER AUTOINCREMENT
+  text TEXT NOT NULL,
+  completed BOOLEAN NOT NULL DEFAULT FALSE,   -- BOOLEAN instead of INTEGER
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(), -- TIMESTAMP instead of INTEGER
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_todos_completed ON todos(completed);
+CREATE INDEX idx_todos_created_at ON todos(created_at DESC);
+
+-- Optional: Update trigger for updated_at
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+CREATE TRIGGER update_todos_updated_at BEFORE UPDATE
+    ON todos FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+```
+
+#### 4. Update Worker Code
+
+**Current D1 Implementation:**
 ```typescript
-// worker/index.ts
-// Change from D1:
-import { drizzle } from 'drizzle-orm/d1';
+// worker/index.ts (current)
+import { Hono } from 'hono';
+
 type Bindings = {
   DB: D1Database;
 };
-const db = drizzle(c.env.DB);
 
-// To Neon:
+const app = new Hono<{ Bindings: Bindings }>();
+
+// Get all todos
+app.get('/api/todos', async (c) => {
+  const { results } = await c.env.DB.prepare(
+    'SELECT * FROM todos ORDER BY created_at DESC'
+  ).all<Todo>();
+  
+  // Convert SQLite integers to booleans
+  const todos = results.map(todo => ({
+    ...todo,
+    completed: todo.completed === 1
+  }));
+  
+  return c.json(todos);
+});
+
+// Create todo
+app.post('/api/todos', async (c) => {
+  const body = await c.req.json<{ text: string }>();
+  const now = Math.floor(Date.now() / 1000);
+  
+  const result = await c.env.DB.prepare(
+    'INSERT INTO todos (text, completed, created_at, updated_at) VALUES (?, ?, ?, ?)'
+  ).bind(body.text, 0, now, now).run();
+  
+  return c.json({ id: result.meta.last_row_id, ...body });
+});
+```
+
+**PostgreSQL Implementation with Neon:**
+```typescript
+// worker/index.ts (PostgreSQL version)
+import { Hono } from 'hono';
 import { neon } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-http';
+
 type Bindings = {
-  DATABASE_URL: string;
+  DATABASE_URL: string;  // Changed from DB: D1Database
 };
-const sql = neon(c.env.DATABASE_URL);
-const db = drizzle(sql);
+
+const app = new Hono<{ Bindings: Bindings }>();
+
+// Get all todos
+app.get('/api/todos', async (c) => {
+  const sql = neon(c.env.DATABASE_URL);
+  
+  const todos = await sql`
+    SELECT * FROM todos ORDER BY created_at DESC
+  `;
+  
+  // No conversion needed - PostgreSQL returns proper booleans
+  return c.json(todos);
+});
+
+// Create todo
+app.post('/api/todos', async (c) => {
+  const body = await c.req.json<{ text: string }>();
+  const sql = neon(c.env.DATABASE_URL);
+  
+  const [newTodo] = await sql`
+    INSERT INTO todos (text) 
+    VALUES (${body.text})
+    RETURNING *
+  `;
+  
+  return c.json(newTodo, 201);
+});
+
+// Update todo
+app.put('/api/todos/:id', async (c) => {
+  const id = parseInt(c.req.param('id'));
+  const body = await c.req.json<{ text?: string; completed?: boolean }>();
+  const sql = neon(c.env.DATABASE_URL);
+  
+  // Build dynamic update
+  const updates = [];
+  if (body.text !== undefined) updates.push(sql`text = ${body.text}`);
+  if (body.completed !== undefined) updates.push(sql`completed = ${body.completed}`);
+  
+  const [updated] = await sql`
+    UPDATE todos 
+    SET ${sql(updates)}, updated_at = NOW()
+    WHERE id = ${id}
+    RETURNING *
+  `;
+  
+  return c.json(updated);
+});
+
+// Delete todo
+app.delete('/api/todos/:id', async (c) => {
+  const id = parseInt(c.req.param('id'));
+  const sql = neon(c.env.DATABASE_URL);
+  
+  const result = await sql`
+    DELETE FROM todos WHERE id = ${id}
+  `;
+  
+  return c.json({ message: 'Deleted' });
+});
 ```
 
 #### 5. Update Environment
@@ -108,28 +230,7 @@ DATABASE_URL=postgresql://user:password@host.neon.tech/database
 wrangler secret put DATABASE_URL
 ```
 
-#### 6. Update Drizzle Config
-```typescript
-// drizzle.config.ts
-import { defineConfig } from 'drizzle-kit';
-
-export default defineConfig({
-  schema: './drizzle/schema.ts',
-  out: './drizzle/migrations',
-  driver: 'pg',  // Changed from 'better-sqlite'
-  dbCredentials: {
-    connectionString: process.env.DATABASE_URL!,
-  },
-});
-```
-
-#### 7. Generate and Run Migrations
-```bash
-npm run db:generate
-npm run db:push
-```
-
-### Vercel + Vercel Postgres
+### Vercel + Vercel Postgres (Raw SQL)
 
 #### 1. Set up Vercel Postgres
 ```bash
@@ -141,39 +242,33 @@ npm run db:push
 
 #### 2. Install Dependencies
 ```bash
-npm install @vercel/postgres drizzle-orm
+npm install @vercel/postgres
 ```
 
-#### 3. Update for Vercel
-```typescript
-// lib/db.ts
-import { sql } from '@vercel/postgres';
-import { drizzle } from 'drizzle-orm/vercel-postgres';
-
-export const db = drizzle(sql);
-```
-
-#### 4. API Routes (Next.js App Router)
+#### 3. API Routes (Next.js App Router)
 ```typescript
 // app/api/todos/route.ts
-import { db } from '@/lib/db';
-import { todos } from '@/drizzle/schema';
+import { sql } from '@vercel/postgres';
 
 export async function GET() {
-  const allTodos = await db.select().from(todos);
-  return Response.json(allTodos);
+  const { rows } = await sql`
+    SELECT * FROM todos ORDER BY created_at DESC
+  `;
+  return Response.json(rows);
 }
 
 export async function POST(request: Request) {
   const body = await request.json();
-  const [newTodo] = await db.insert(todos)
-    .values({ text: body.text })
-    .returning();
-  return Response.json(newTodo, { status: 201 });
+  const { rows } = await sql`
+    INSERT INTO todos (text) 
+    VALUES (${body.text})
+    RETURNING *
+  `;
+  return Response.json(rows[0], { status: 201 });
 }
 ```
 
-### Netlify + Supabase
+### Netlify + Supabase (Raw SQL)
 
 #### 1. Set up Supabase
 ```bash
@@ -185,38 +280,50 @@ export async function POST(request: Request) {
 
 #### 2. Install Dependencies
 ```bash
-npm install @supabase/supabase-js drizzle-orm postgres
+npm install postgres
 ```
 
 #### 3. Netlify Functions
 ```typescript
 // netlify/functions/todos.ts
-import { createClient } from '@supabase/supabase-js';
-import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 
-const queryClient = postgres(process.env.DATABASE_URL!);
-const db = drizzle(queryClient);
+const sql = postgres(process.env.DATABASE_URL!, {
+  ssl: 'require',
+});
 
 export const handler = async (event: any) => {
   if (event.httpMethod === 'GET') {
-    const todos = await db.select().from(todosTable);
+    const todos = await sql`
+      SELECT * FROM todos ORDER BY created_at DESC
+    `;
     return {
       statusCode: 200,
       body: JSON.stringify(todos),
     };
   }
-  // ... other methods
+  
+  if (event.httpMethod === 'POST') {
+    const body = JSON.parse(event.body);
+    const [newTodo] = await sql`
+      INSERT INTO todos (text) 
+      VALUES (${body.text})
+      RETURNING *
+    `;
+    return {
+      statusCode: 201,
+      body: JSON.stringify(newTodo),
+    };
+  }
 };
 ```
 
-### Railway/Render (Traditional Node.js)
+### Railway/Render (Traditional Node.js with Raw SQL)
 
 #### 1. Standard PostgreSQL Connection
 ```typescript
 // server.ts
 import express from 'express';
-import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 
 const pool = new Pool({
@@ -224,14 +331,40 @@ const pool = new Pool({
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 });
 
-const db = drizzle(pool);
-
 const app = express();
 app.use(express.json());
 
 app.get('/api/todos', async (req, res) => {
-  const todos = await db.select().from(todosTable);
-  res.json(todos);
+  const result = await pool.query(
+    'SELECT * FROM todos ORDER BY created_at DESC'
+  );
+  res.json(result.rows);
+});
+
+app.post('/api/todos', async (req, res) => {
+  const { text } = req.body;
+  const result = await pool.query(
+    'INSERT INTO todos (text) VALUES ($1) RETURNING *',
+    [text]
+  );
+  res.status(201).json(result.rows[0]);
+});
+
+app.put('/api/todos/:id', async (req, res) => {
+  const { id } = req.params;
+  const { text, completed } = req.body;
+  
+  const result = await pool.query(
+    'UPDATE todos SET text = $1, completed = $2, updated_at = NOW() WHERE id = $3 RETURNING *',
+    [text, completed, id]
+  );
+  res.json(result.rows[0]);
+});
+
+app.delete('/api/todos/:id', async (req, res) => {
+  const { id } = req.params;
+  await pool.query('DELETE FROM todos WHERE id = $1', [id]);
+  res.json({ message: 'Deleted' });
 });
 
 app.listen(process.env.PORT || 3000);
@@ -241,13 +374,25 @@ app.listen(process.env.PORT || 3000);
 
 ### Export from D1
 ```bash
-# Export data from D1
-wrangler d1 execute YOUR_DATABASE --command "SELECT * FROM todos" > todos_backup.json
+# Export data from D1 to JSON
+wrangler d1 execute app-database --command "SELECT * FROM todos" > todos_backup.json
+
+# Or export as SQL inserts
+wrangler d1 execute app-database --command "
+  SELECT 'INSERT INTO todos (text, completed, created_at, updated_at) VALUES (' || 
+    quote(text) || ', ' ||
+    CASE completed WHEN 1 THEN 'true' ELSE 'false' END || ', ' ||
+    'to_timestamp(' || created_at || '), ' ||
+    'to_timestamp(' || updated_at || '));'
+  FROM todos
+" > todos_inserts.sql
 ```
 
 ### Import to PostgreSQL
+
+#### Option 1: Direct SQL Import
 ```sql
--- Create table in PostgreSQL
+-- First, create the table
 CREATE TABLE todos (
   id SERIAL PRIMARY KEY,
   text TEXT NOT NULL,
@@ -256,10 +401,14 @@ CREATE TABLE todos (
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- Import data (you'll need to transform the JSON)
--- Or use a migration script:
+-- Then run the generated inserts
+-- Or manually convert the data:
+INSERT INTO todos (text, completed, created_at, updated_at) VALUES
+  ('Task 1', false, to_timestamp(1699000000), to_timestamp(1699000000)),
+  ('Task 2', true, to_timestamp(1699000001), to_timestamp(1699000001));
 ```
 
+#### Option 2: Migration Script
 ```typescript
 // migrate-data.ts
 import { neon } from '@neondatabase/serverless';
@@ -269,35 +418,82 @@ const sql = neon(process.env.DATABASE_URL!);
 
 async function migrate() {
   for (const todo of oldData) {
+    // Convert SQLite integers to PostgreSQL types
+    const completed = todo.completed === 1;
+    const createdAt = new Date(todo.created_at * 1000);
+    const updatedAt = new Date(todo.updated_at * 1000);
+    
     await sql`
       INSERT INTO todos (text, completed, created_at, updated_at)
-      VALUES (${todo.text}, ${todo.completed}, ${todo.created_at}, ${todo.updated_at})
+      VALUES (${todo.text}, ${completed}, ${createdAt}, ${updatedAt})
     `;
   }
+  console.log(`Migrated ${oldData.length} todos`);
 }
 
-migrate();
+migrate().catch(console.error);
+```
+
+## Key Differences: D1 vs PostgreSQL
+
+### Data Types
+| D1 (SQLite) | PostgreSQL | Notes |
+|-------------|------------|-------|
+| INTEGER (0/1) | BOOLEAN | Use true/false in PostgreSQL |
+| INTEGER (timestamp) | TIMESTAMP | PostgreSQL has native datetime |
+| INTEGER PRIMARY KEY AUTOINCREMENT | SERIAL PRIMARY KEY | Auto-increment syntax differs |
+| TEXT | TEXT | Same |
+| strftime('%s', 'now') | NOW() | Different time functions |
+
+### Query Differences
+
+**Parameterized Queries:**
+```javascript
+// D1
+await db.prepare('SELECT * FROM todos WHERE id = ?').bind(id).first();
+
+// PostgreSQL (Neon)
+await sql`SELECT * FROM todos WHERE id = ${id}`;
+
+// PostgreSQL (pg library)
+await pool.query('SELECT * FROM todos WHERE id = $1', [id]);
+```
+
+**Boolean Handling:**
+```javascript
+// D1 - must convert
+completed: todo.completed === 1
+
+// PostgreSQL - native boolean
+completed: todo.completed
+```
+
+**Timestamps:**
+```javascript
+// D1 - Unix timestamp as integer
+const now = Math.floor(Date.now() / 1000);
+
+// PostgreSQL - native timestamp
+// Handled automatically with DEFAULT NOW()
 ```
 
 ## Performance Considerations
 
-### Connection Pooling
+### Connection Strategies
 
-**Cloudflare Workers**: Use HTTP-based drivers (Neon, PlanetScale)
+**Cloudflare Workers**: Must use HTTP-based drivers
 ```typescript
-// Good for Workers (HTTP-based)
+// ✅ Good - HTTP-based
 import { neon } from '@neondatabase/serverless';
 
-// Bad for Workers (needs persistent connection)
-import { Pool } from 'pg';  // Won't work!
+// ❌ Bad - Needs persistent connection
+import { Pool } from 'pg';  // Won't work in Workers!
 ```
 
 **Traditional Servers**: Use connection pooling
 ```typescript
-// Good for Node.js servers
-import { Pool } from 'pg';
 const pool = new Pool({
-  max: 20,
+  max: 20,  // Maximum connections
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 2000,
 });
@@ -305,20 +501,20 @@ const pool = new Pool({
 
 ### Query Optimization
 
-**D1 (SQLite)**:
-- Simple queries
-- Limited concurrent writes
-- No query planner optimization
-
-**PostgreSQL**:
-- Use indexes for large tables
-- EXPLAIN ANALYZE for query optimization
-- Prepared statements for repeated queries
-
+**Add Indexes:**
 ```sql
--- Add indexes for better performance
+-- Same as D1, but PostgreSQL has more index types
 CREATE INDEX idx_todos_completed ON todos(completed);
 CREATE INDEX idx_todos_created_at ON todos(created_at DESC);
+
+-- PostgreSQL-specific optimizations
+CREATE INDEX idx_todos_text_search ON todos USING gin(to_tsvector('english', text));
+```
+
+**Use EXPLAIN:**
+```sql
+-- PostgreSQL provides detailed query plans
+EXPLAIN ANALYZE SELECT * FROM todos WHERE completed = false;
 ```
 
 ## Cost Comparison
@@ -331,33 +527,14 @@ CREATE INDEX idx_todos_created_at ON todos(created_at DESC);
 | Vercel Postgres | 256MB | $15/month | Vercel deployments |
 | Railway | Trial credits | $5/month | Traditional hosting |
 
-## Rollback Plan
-
-If you need to rollback to D1:
-
-1. Export PostgreSQL data
-2. Transform timestamps back to integers
-3. Import to D1
-4. Revert code changes
-5. Update environment variables
-
-```bash
-# Keep both schemas during transition
-drizzle/
-  schema.ts         # Current D1 schema
-  schema.pg.ts      # PostgreSQL schema
-  
-# Switch by changing imports
-```
-
 ## Common Gotchas
 
-1. **Timestamps**: D1 uses integers, PostgreSQL uses actual timestamps
+1. **Timestamps**: D1 uses Unix integers, PostgreSQL uses TIMESTAMP type
 2. **Booleans**: D1 uses 0/1, PostgreSQL uses true/false
-3. **Auto-increment**: D1 uses INTEGER PRIMARY KEY, PostgreSQL uses SERIAL
+3. **Auto-increment**: Different syntax (AUTOINCREMENT vs SERIAL)
 4. **Connections**: Workers can't maintain persistent connections
-5. **Transactions**: Limited in HTTP-based drivers
-6. **SSL**: Required in production for most providers
+5. **Prepared Statements**: Different syntax across libraries
+6. **Case Sensitivity**: PostgreSQL converts unquoted identifiers to lowercase
 
 ## Testing the Migration
 
@@ -369,8 +546,14 @@ async function testConnection() {
   const sql = neon(process.env.DATABASE_URL!);
   
   try {
-    const result = await sql`SELECT NOW()`;
-    console.log('✅ Connected to PostgreSQL:', result);
+    // Test connection
+    const [time] = await sql`SELECT NOW() as current_time`;
+    console.log('✅ Connected to PostgreSQL:', time);
+    
+    // Test todos table
+    const todos = await sql`SELECT COUNT(*) as count FROM todos`;
+    console.log('📊 Todos count:', todos[0].count);
+    
   } catch (error) {
     console.error('❌ Connection failed:', error);
   }
@@ -379,14 +562,44 @@ async function testConnection() {
 testConnection();
 ```
 
+## Rollback Plan
+
+If you need to rollback to D1:
+
+1. **Export PostgreSQL data:**
+```sql
+-- Export with compatible types
+SELECT 
+  id,
+  text,
+  CASE WHEN completed THEN 1 ELSE 0 END as completed,
+  EXTRACT(EPOCH FROM created_at)::integer as created_at,
+  EXTRACT(EPOCH FROM updated_at)::integer as updated_at
+FROM todos;
+```
+
+2. **Import back to D1:**
+```bash
+# Create D1 schema
+wrangler d1 execute app-database --local --file=./db/schema.sql
+
+# Import data
+wrangler d1 execute app-database --local --file=./rollback-data.sql
+```
+
+3. **Revert code changes:**
+- Switch back to D1Database binding
+- Remove PostgreSQL dependencies
+- Restore integer/boolean conversions
+
 ## Conclusion
 
-Migrating from D1 to PostgreSQL is straightforward with Drizzle ORM. The main considerations are:
+Migrating from D1 to PostgreSQL with raw SQL is straightforward. The main considerations are:
 
-1. **Choose the right provider** for your deployment platform
-2. **Update schema types** (timestamps, booleans, serial)
+1. **Choose the right provider** based on your deployment platform
+2. **Update SQL syntax** (SERIAL, BOOLEAN, TIMESTAMP, NOW())
 3. **Use appropriate connection method** (HTTP for Workers, Pool for servers)
-4. **Migrate data carefully** with proper transformations
-5. **Test thoroughly** before switching production
+4. **Handle type conversions** during data migration
+5. **Test thoroughly** with both schema and data
 
-The easiest path for Cloudflare Workers is **Neon**, while Vercel deployments should use **Vercel Postgres**, and traditional Node.js hosting works well with **Railway** or **Render**.
+The easiest path for Cloudflare Workers is **Neon** with its HTTP-based driver, while traditional Node.js hosting works well with the standard `pg` library and connection pooling.

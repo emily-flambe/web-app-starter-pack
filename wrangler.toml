@@ -11,8 +11,8 @@ not_found_handling = "single-page-application"
 # TODO: Replace with your database ID after running 'wrangler d1 create app-database'
 [[d1_databases]]
 binding = "DB"
-database_name = "app-database"
-database_id = "YOUR_DATABASE_ID_HERE"
+database_name = "starter-pack"
+database_id = "c8403398-e2fc-4a7e-9505-e1e7d11f3a40"
 
 # Optional: KV namespace for caching
 # [[kv_namespaces]]
