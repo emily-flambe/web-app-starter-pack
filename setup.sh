@@ -56,20 +56,26 @@ else
     exit 1
 fi
 
-# Check if wrangler is installed globally or locally
-if command -v wrangler &> /dev/null; then
-    WRANGLER_VERSION=$(wrangler --version 2>&1 | head -n 1)
-    print_success "Wrangler installed: $WRANGLER_VERSION"
-    WRANGLER_CMD="wrangler"
-elif [ -f "node_modules/.bin/wrangler" ]; then
+# Check if wrangler is installed and is v4 or higher
+if [ -f "node_modules/.bin/wrangler" ]; then
     WRANGLER_VERSION=$(npx wrangler --version 2>&1 | head -n 1)
-    print_success "Wrangler installed locally: $WRANGLER_VERSION"
-    WRANGLER_CMD="npx wrangler"
+    MAJOR_VERSION=$(echo $WRANGLER_VERSION | cut -d. -f1)
+    if [ "$MAJOR_VERSION" -ge 4 ]; then
+        print_success "Wrangler v4+ installed: $WRANGLER_VERSION"
+        WRANGLER_CMD="npx wrangler"
+    else
+        print_warning "Wrangler v3 detected. Updating to v4..."
+        npm install --save-dev wrangler@latest
+        WRANGLER_VERSION=$(npx wrangler --version 2>&1 | head -n 1)
+        print_success "Updated to Wrangler: $WRANGLER_VERSION"
+        WRANGLER_CMD="npx wrangler"
+    fi
 else
-    print_warning "Wrangler not found. Installing..."
-    npm install -g wrangler
-    WRANGLER_CMD="wrangler"
-    print_success "Wrangler installed globally"
+    print_warning "Wrangler not found. Installing v4..."
+    npm install --save-dev wrangler@latest
+    WRANGLER_CMD="npx wrangler"
+    WRANGLER_VERSION=$(npx wrangler --version 2>&1 | head -n 1)
+    print_success "Wrangler v4 installed: $WRANGLER_VERSION"
 fi
 
 echo ""
@@ -256,7 +262,84 @@ fi
 
 echo ""
 
-# Step 7: Final instructions
+# Step 7: Configure Worker Name
+print_step "Worker Configuration..."
+CURRENT_NAME=$(grep "^name = " wrangler.toml | head -1 | sed 's/name = "\(.*\)"/\1/')
+echo "Current worker name: $CURRENT_NAME"
+echo ""
+echo "Would you like to change the worker name? (y/n)"
+read -r response
+if [[ "$response" =~ ^[Yy]$ ]]; then
+    echo "Enter a name for your worker (lowercase, hyphens allowed):"
+    read -r worker_name
+    
+    # Validate worker name (lowercase, numbers, hyphens only)
+    if [[ "$worker_name" =~ ^[a-z0-9-]+$ ]]; then
+        # Update wrangler.toml with the new worker name
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            # macOS
+            sed -i '' "s/^name = \".*\"/name = \"$worker_name\"/g" wrangler.toml
+            # Also update environment-specific names
+            sed -i '' "s/name = \"web-app-starter-pack-dev\"/name = \"$worker_name-dev\"/g" wrangler.toml
+            sed -i '' "s/name = \"web-app-starter-pack-staging\"/name = \"$worker_name-staging\"/g" wrangler.toml
+            sed -i '' "s/name = \"web-app-starter-pack\"/name = \"$worker_name\"/g" wrangler.toml
+        else
+            # Linux
+            sed -i "s/^name = \".*\"/name = \"$worker_name\"/g" wrangler.toml
+            sed -i "s/name = \"web-app-starter-pack-dev\"/name = \"$worker_name-dev\"/g" wrangler.toml
+            sed -i "s/name = \"web-app-starter-pack-staging\"/name = \"$worker_name-staging\"/g" wrangler.toml
+            sed -i "s/name = \"web-app-starter-pack\"/name = \"$worker_name\"/g" wrangler.toml
+        fi
+        print_success "Worker name updated to: $worker_name"
+        WORKER_NAME="$worker_name"
+    else
+        print_error "Invalid worker name. Must contain only lowercase letters, numbers, and hyphens."
+        WORKER_NAME="$CURRENT_NAME"
+    fi
+else
+    WORKER_NAME="$CURRENT_NAME"
+fi
+
+echo ""
+
+# Step 8: Deploy to Cloudflare Workers
+print_step "Deployment..."
+echo "Would you like to deploy to Cloudflare Workers now? (y/n)"
+read -r response
+if [[ "$response" =~ ^[Yy]$ ]]; then
+    print_step "Deploying to Cloudflare Workers..."
+    DEPLOY_OUTPUT=$($WRANGLER_CMD deploy 2>&1)
+    echo "$DEPLOY_OUTPUT"
+    
+    # Extract the URL from deployment output
+    WORKER_URL=$(echo "$DEPLOY_OUTPUT" | grep -o "https://.*\.workers\.dev" | head -1)
+    
+    if [ -n "$WORKER_URL" ]; then
+        print_success "Worker deployed successfully!"
+        echo ""
+        echo "Your app is live at: ${GREEN}$WORKER_URL${NC}"
+    fi
+    
+    # Get database name from wrangler.toml
+    DB_NAME=$(grep "database_name" wrangler.toml | head -1 | sed 's/.*= "\(.*\)"/\1/')
+    
+    # Deploy database schema to remote
+    echo ""
+    echo "Would you like to deploy the database schema to the remote database? (y/n)"
+    read -r response
+    if [[ "$response" =~ ^[Yy]$ ]]; then
+        $WRANGLER_CMD d1 execute "$DB_NAME" --remote --file=./db/schema.sql
+        print_success "Remote database schema deployed"
+    fi
+    
+    print_success "Deployment complete! Your app is live at your workers.dev URL"
+else
+    print_warning "Skipping deployment. Run '$WRANGLER_CMD deploy' when ready."
+fi
+
+echo ""
+
+# Step 8: Final instructions
 echo "================================================"
 echo "   Setup Complete!"
 echo "================================================"

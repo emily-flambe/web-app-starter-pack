@@ -7,8 +7,10 @@ set -e
 
 echo "Quick setup starting..."
 
-# Install dependencies
+# Install dependencies (including Wrangler v4)
+echo "Installing dependencies with Wrangler v4..."
 npm install
+npm install --save-dev wrangler@latest
 
 # Copy environment files
 cp .env.example .env.local 2>/dev/null || true

@@ -48,7 +48,7 @@ make dev
 
 # Or run separately
 npm run dev              # Frontend on http://localhost:5173
-npx wrangler dev        # Backend on http://localhost:8787
+npx npx wrangler dev        # Backend on http://localhost:8787
 ```
 
 The starter includes a **working Todo app example** that demonstrates:
@@ -64,7 +64,7 @@ The starter includes a **working Todo app example** that demonstrates:
 - **Node.js 20.11.0** - Managed via nvm and `.nvmrc`
 - **npm 9+** or **pnpm 8+**
 - **[Cloudflare account](https://dash.cloudflare.com/sign-up)** (free tier available)
-- **Wrangler CLI**: `npm install -g wrangler`
+- **Wrangler CLI v4+**: Installed automatically by setup script
 
 ## 🛠️ Cloudflare Workers Setup
 
@@ -74,18 +74,18 @@ The starter includes a **working Todo app example** that demonstrates:
 
 ### 2. Install and Authenticate Wrangler
 ```bash
-# Install Wrangler CLI globally
-npm install -g wrangler
+# Install Wrangler v4 as dev dependency (recommended)
+npm install --save-dev wrangler@latest
 
 # Login to your Cloudflare account
-wrangler login
+npx wrangler login
 # This opens a browser - click "Allow" to authenticate
 ```
 
 ### 3. Create D1 Database
 ```bash
 # Create a new D1 database
-wrangler d1 create app-database
+npx wrangler d1 create app-database
 
 # Output will look like:
 # ✅ Successfully created DB 'app-database' in region ENAM
@@ -116,7 +116,7 @@ npm run db:init
 npm run db:seed
 
 # For production database
-wrangler d1 execute app-database --remote --file=./db/schema.sql
+npx wrangler d1 execute app-database --remote --file=./db/schema.sql
 ```
 
 ## 🏗️ Project Structure
@@ -241,7 +241,7 @@ Implement the repository pattern for clean database access:
 ```bash
 # Development
 npm run dev              # Start Vite dev server
-wrangler dev            # Start Worker dev server
+npx wrangler dev            # Start Worker dev server
 npm run dev:mock        # Start with MSW mocks
 
 # Database
@@ -259,8 +259,8 @@ npm run build          # Build for production
 npm run preview        # Preview production build
 
 # Deployment
-wrangler deploy              # Deploy to Cloudflare
-wrangler deploy --env staging # Deploy to staging
+npx wrangler deploy              # Deploy to Cloudflare
+npx wrangler deploy --env staging # Deploy to staging
 ```
 
 ## 🔧 Configuration
@@ -290,12 +290,12 @@ npm run build
 
 2. **Deploy to Cloudflare:**
 ```bash
-wrangler deploy
+npx wrangler deploy
 ```
 
 3. **Set production secrets (if any):**
 ```bash
-# Example: wrangler secret put API_SECRET
+# Example: npx wrangler secret put API_SECRET
 ```
 
 ### Deploy to Other Platforms

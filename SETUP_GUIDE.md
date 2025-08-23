@@ -43,8 +43,8 @@ nvm use
 # Install project dependencies
 npm install
 
-# Install Wrangler globally (optional)
-npm install -g wrangler
+# Wrangler v4 is installed as a dev dependency (recommended)
+# The setup script will handle this automatically
 ```
 
 ### 4. Configure Environment
@@ -62,7 +62,7 @@ cp .dev.vars.example .dev.vars
 
 ```bash
 # Login to your Cloudflare account
-wrangler login
+npx wrangler login
 
 # This opens a browser window - click "Allow" to authenticate
 ```
@@ -71,7 +71,7 @@ wrangler login
 
 ```bash
 # Create a new D1 database
-wrangler d1 create app-database
+npx wrangler d1 create app-database
 
 # Output will show:
 # ✅ Successfully created DB 'app-database'
@@ -95,13 +95,13 @@ database_id = "YOUR_DATABASE_ID_HERE"  # <- Replace with your ID
 
 ```bash
 # Create tables in local database
-wrangler d1 execute app-database --local --file=./db/schema.sql
+npx wrangler d1 execute app-database --local --file=./db/schema.sql
 
 # Add sample data (optional)
-wrangler d1 execute app-database --local --file=./db/seed.sql
+npx wrangler d1 execute app-database --local --file=./db/seed.sql
 
 # For remote database (production)
-wrangler d1 execute app-database --remote --file=./db/schema.sql
+npx wrangler d1 execute app-database --remote --file=./db/schema.sql
 ```
 
 ### 8. Build Frontend
@@ -118,7 +118,7 @@ make dev
 
 # Or run separately:
 npm run dev              # Frontend on http://localhost:5173
-wrangler dev            # Backend on http://localhost:8787
+npx wrangler dev            # Backend on http://localhost:8787
 ```
 
 ### 10. Verify Setup
@@ -133,10 +133,10 @@ wrangler dev            # Backend on http://localhost:8787
 ### Wrangler Not Found
 
 ```bash
-# If wrangler command not found, use npx:
-npx wrangler login
-npx wrangler d1 create app-database
-npx wrangler dev
+# If npx wrangler command not found, use npx:
+npx npx wrangler login
+npx npx wrangler d1 create app-database
+npx npx wrangler dev
 
 # Or install globally:
 npm install -g wrangler
@@ -146,11 +146,11 @@ npm install -g wrangler
 
 If you see "Failed to load todos" in the app:
 
-1. **Check backend is running**: Ensure `wrangler dev` is running on port 8787
+1. **Check backend is running**: Ensure `npx wrangler dev` is running on port 8787
 2. **Check database ID**: Verify the database_id in wrangler.toml is correct
 3. **Initialize database**: Run schema.sql to create tables:
    ```bash
-   wrangler d1 execute app-database --local --file=./db/schema.sql
+   npx wrangler d1 execute app-database --local --file=./db/schema.sql
    ```
 
 ### Port Already in Use
@@ -164,14 +164,14 @@ lsof -ti:8787 | xargs kill -9  # Backend port
 
 # Or change ports in configuration:
 # Frontend: vite.config.ts → server.port
-# Backend: wrangler dev --port 8788
+# Backend: npx wrangler dev --port 8788
 ```
 
 ### Authentication Issues
 
-If `wrangler login` fails:
+If `npx wrangler login` fails:
 
-1. **Clear credentials**: `wrangler logout` then `wrangler login` again
+1. **Clear credentials**: `npx wrangler logout` then `npx wrangler login` again
 2. **Use API token**: Create at https://dash.cloudflare.com/profile/api-tokens
    ```bash
    export CLOUDFLARE_API_TOKEN=your_token_here
@@ -204,7 +204,7 @@ If database queries fail after schema changes:
    rm -rf .wrangler/state/v3/d1
    
    # Recreate schema
-   wrangler d1 execute app-database --local --file=./db/schema.sql
+   npx wrangler d1 execute app-database --local --file=./db/schema.sql
    ```
 
 2. **Check SQL syntax**: D1 uses SQLite syntax, not PostgreSQL
@@ -240,7 +240,7 @@ app.use('*', cors({
 
 **Solution**: Create and configure database
 ```bash
-wrangler d1 create app-database
+npx wrangler d1 create app-database
 # Update wrangler.toml with the database_id
 ```
 
@@ -277,6 +277,6 @@ Once setup is complete:
 1. **Explore the code**: Check `src/App.tsx` and `worker/index.ts`
 2. **Modify the todo app**: Add new features to learn the stack
 3. **Run tests**: `npm test` and `npm run test:e2e`
-4. **Deploy**: When ready, run `wrangler deploy`
+4. **Deploy**: When ready, run `npx wrangler deploy`
 
 Happy coding!
