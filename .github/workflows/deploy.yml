@@ -28,21 +28,19 @@ jobs:
       - name: Build application
         run: npm run build
       
-      - name: Deploy to Cloudflare (Production)
-        if: github.ref == 'refs/heads/main' && github.actor != 'dependabot[bot]'
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy --minify
-      
-      - name: Deploy to Cloudflare (Preview)
-        if: github.ref != 'refs/heads/main' && github.actor != 'dependabot[bot]'
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: versions upload
+      - name: Deploy to Cloudflare
+        if: github.actor != 'dependabot[bot]'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "Deploying to production..."
+            npx wrangler deploy --minify
+          else
+            echo "Creating preview deployment..."
+            npx wrangler versions upload
+          fi
       
       - name: Run tests
         run: npm run test
