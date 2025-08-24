@@ -1,6 +1,6 @@
 /**
  * API Client for backend communication
- * 
+ *
  * This example shows how to communicate with the Cloudflare Worker backend
  */
 
@@ -26,14 +26,14 @@ export class ApiClient {
       this.baseUrl = import.meta.env.VITE_API_URL;
     } else if (import.meta.env.PROD) {
       // In production, use relative URLs (same domain)
-      this.baseUrl = '';
+      this.baseUrl = "";
     } else {
       // Fallback for local development
-      this.baseUrl = 'http://localhost:8787';
+      this.baseUrl = "http://localhost:8787";
     }
-    
+
     this.headers = {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     };
   }
 
@@ -51,7 +51,11 @@ export class ApiClient {
   /**
    * Health check endpoint
    */
-  async checkHealth(): Promise<{ status: string; timestamp: string; message: string }> {
+  async checkHealth(): Promise<{
+    status: string;
+    timestamp: string;
+    message: string;
+  }> {
     const response = await fetch(`${this.baseUrl}/api/health`, {
       headers: this.headers,
     });
@@ -87,7 +91,7 @@ export class ApiClient {
    */
   async createTodo(text: string): Promise<Todo> {
     const response = await fetch(`${this.baseUrl}/api/todos`, {
-      method: 'POST',
+      method: "POST",
       headers: this.headers,
       body: JSON.stringify({ text }),
     });
@@ -97,9 +101,12 @@ export class ApiClient {
   /**
    * Update a todo
    */
-  async updateTodo(id: number, updates: { text?: string; completed?: boolean }): Promise<Todo> {
+  async updateTodo(
+    id: number,
+    updates: { text?: string; completed?: boolean },
+  ): Promise<Todo> {
     const response = await fetch(`${this.baseUrl}/api/todos/${id}`, {
-      method: 'PUT',
+      method: "PUT",
       headers: this.headers,
       body: JSON.stringify(updates),
     });
@@ -111,7 +118,7 @@ export class ApiClient {
    */
   async deleteTodo(id: number): Promise<{ message: string }> {
     const response = await fetch(`${this.baseUrl}/api/todos/${id}`, {
-      method: 'DELETE',
+      method: "DELETE",
       headers: this.headers,
     });
     return this.handleResponse<{ message: string }>(response);

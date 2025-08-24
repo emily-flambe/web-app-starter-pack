@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
-import { apiClient, type Todo } from './lib/api/client';
+import { useState, useEffect } from "react";
+import { apiClient, type Todo } from "./lib/api/client";
 
 function App() {
   const [todos, setTodos] = useState<Todo[]>([]);
-  const [newTodoText, setNewTodoText] = useState('');
+  const [newTodoText, setNewTodoText] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -19,8 +19,8 @@ function App() {
       const data = await apiClient.getTodos();
       setTodos(data);
     } catch (err) {
-      setError('Failed to load todos. Make sure the backend is running!');
-      console.error('Error loading todos:', err);
+      setError("Failed to load todos. Make sure the backend is running!");
+      console.error("Error loading todos:", err);
     } finally {
       setLoading(false);
     }
@@ -34,10 +34,10 @@ function App() {
       setError(null);
       const newTodo = await apiClient.createTodo(newTodoText);
       setTodos([...todos, newTodo]);
-      setNewTodoText('');
+      setNewTodoText("");
     } catch (err) {
-      setError('Failed to add todo');
-      console.error('Error adding todo:', err);
+      setError("Failed to add todo");
+      console.error("Error adding todo:", err);
     }
   };
 
@@ -45,10 +45,10 @@ function App() {
     try {
       setError(null);
       const updated = await apiClient.toggleTodo(id, !completed);
-      setTodos(todos.map(todo => todo.id === id ? updated : todo));
+      setTodos(todos.map((todo) => (todo.id === id ? updated : todo)));
     } catch (err) {
-      setError('Failed to update todo');
-      console.error('Error toggling todo:', err);
+      setError("Failed to update todo");
+      console.error("Error toggling todo:", err);
     }
   };
 
@@ -56,10 +56,10 @@ function App() {
     try {
       setError(null);
       await apiClient.deleteTodo(id);
-      setTodos(todos.filter(todo => todo.id !== id));
+      setTodos(todos.filter((todo) => todo.id !== id));
     } catch (err) {
-      setError('Failed to delete todo');
-      console.error('Error deleting todo:', err);
+      setError("Failed to delete todo");
+      console.error("Error deleting todo:", err);
     }
   };
 
@@ -108,13 +108,19 @@ function App() {
           {loading ? (
             <div className="text-center py-8">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-              <p className="mt-2 text-gray-600 dark:text-gray-400">Loading todos...</p>
+              <p className="mt-2 text-gray-600 dark:text-gray-400">
+                Loading todos...
+              </p>
             </div>
           ) : todos.length === 0 ? (
             <div className="text-center py-8 text-gray-500 dark:text-gray-400">
               <p>No todos yet. Add one above!</p>
               <p className="text-sm mt-2">
-                Make sure to run <code className="bg-gray-200 dark:bg-gray-800 px-2 py-1 rounded">wrangler dev</code> for the backend
+                Make sure to run{" "}
+                <code className="bg-gray-200 dark:bg-gray-800 px-2 py-1 rounded">
+                  wrangler dev
+                </code>{" "}
+                for the backend
               </p>
             </div>
           ) : (
@@ -132,8 +138,8 @@ function App() {
                 <span
                   className={`flex-1 ${
                     todo.completed
-                      ? 'line-through text-gray-500 dark:text-gray-500'
-                      : 'text-gray-900 dark:text-white'
+                      ? "line-through text-gray-500 dark:text-gray-500"
+                      : "text-gray-900 dark:text-white"
                   }`}
                 >
                   {todo.text}
@@ -155,13 +161,36 @@ function App() {
             How This Works
           </h2>
           <ol className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
-            <li>1. Frontend (this React app) makes API calls using <code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">src/lib/api/client.ts</code></li>
-            <li>2. API calls go to the backend at <code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">http://localhost:8787/api/todos</code></li>
-            <li>3. Backend (Cloudflare Worker) handles requests in <code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">worker/index.ts</code></li>
+            <li>
+              1. Frontend (this React app) makes API calls using{" "}
+              <code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">
+                src/lib/api/client.ts
+              </code>
+            </li>
+            <li>
+              2. API calls go to the backend at{" "}
+              <code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">
+                http://localhost:8787/api/todos
+              </code>
+            </li>
+            <li>
+              3. Backend (Cloudflare Worker) handles requests in{" "}
+              <code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">
+                worker/index.ts
+              </code>
+            </li>
             <li>4. Data is stored in D1 database using raw SQL queries</li>
           </ol>
           <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-            Run <code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">npm run dev</code> and <code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">wrangler dev</code> to start both servers.
+            Run{" "}
+            <code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">
+              npm run dev
+            </code>{" "}
+            and{" "}
+            <code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">
+              wrangler dev
+            </code>{" "}
+            to start both servers.
           </p>
         </div>
       </div>

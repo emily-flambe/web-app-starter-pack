@@ -69,17 +69,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
-      - name: Run unit tests with coverage
-        run: npm run test:coverage
-      
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage/lcov.info
-          flags: unittests
-          name: unit-coverage
-          fail_ci_if_error: false
+      - name: Run unit tests
+        run: npm run test
 
   # Step 4: Build the application
   build:
@@ -193,7 +184,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy --env preview --var PREVIEW_NUMBER:${{ github.event.pull_request.number }}
+          command: versions upload
       
       - name: Update deployment status
         uses: chrnorm/deployment-status@v2
