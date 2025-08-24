@@ -31,18 +31,21 @@ jobs:
       - name: Build application
         run: npm run build
       
-      - name: Deploy to Cloudflare
-        if: github.actor != 'dependabot[bot]'
+      - name: Deploy to Cloudflare (Production)
+        if: github.ref == 'refs/heads/main' && github.actor != 'dependabot[bot]'
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: |
-            if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-              deploy --minify
-            else
-              versions upload
-            fi
+          command: deploy --minify
+      
+      - name: Deploy to Cloudflare (Preview)
+        if: github.ref != 'refs/heads/main' && github.actor != 'dependabot[bot]'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: versions upload
       
       - name: Create GitHub deployment
         if: github.ref == 'refs/heads/main'
