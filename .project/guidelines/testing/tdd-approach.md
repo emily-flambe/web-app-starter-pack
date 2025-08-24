@@ -10,7 +10,6 @@ Our TDD approach emphasizes **confidence through comprehensive testing** with a 
 - **Vitest 3.2.x**: Next-generation testing framework with native ESM support and 10x faster than Jest
 - **React Testing Library 16.3.0**: Component testing with React 19 support and new hooks
 - **Playwright**: End-to-end testing with multi-browser support and visual regression testing
-- **MSW 2.10.x**: API mocking for both browser and Node.js environments
 
 ### Testing Pyramid
 
@@ -72,7 +71,7 @@ describe('useCartActions', () => {
 ### Integration Tests (25-35% of tests)
 **Purpose**: Test component integration, API interactions, and feature workflows
 
-**Tools**: Vitest + React Testing Library + MSW
+**Tools**: Vitest + React Testing Library
 
 **Focus Areas**:
 - Component integration with providers
@@ -87,13 +86,8 @@ describe('useCartActions', () => {
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { useActionState } from 'react'
 import { LoginForm } from '@/components/LoginForm'
-import { server } from '@/mocks/server'
 
 describe('LoginForm Integration', () => {
-  beforeAll(() => server.listen())
-  afterEach(() => server.resetHandlers())
-  afterAll(() => server.close())
-
   it('should handle login submission with useActionState', async () => {
     render(<LoginForm />)
     
@@ -237,30 +231,6 @@ export default defineConfig({
 })
 ```
 
-### MSW Setup for API Mocking
-```typescript
-// src/test/mocks/handlers.ts
-import { http, HttpResponse } from 'msw'
-
-export const handlers = [
-  // Auth endpoints
-  http.post('/api/auth/login', () => {
-    return HttpResponse.json({
-      user: { id: '1', email: 'user@example.com' },
-      token: 'mock-jwt-token'
-    })
-  }),
-
-  // API endpoints
-  http.get('/api/users/:id', ({ params }) => {
-    return HttpResponse.json({
-      id: params.id,
-      name: 'John Doe',
-      email: 'john@example.com'
-    })
-  })
-]
-```
 
 ### Playwright Configuration
 ```typescript
@@ -313,6 +283,72 @@ export default defineConfig({
 1. **Red**: Write failing test that describes desired behavior
 2. **Green**: Write minimal code to make test pass
 3. **Refactor**: Improve code quality while maintaining tests
+
+### Failed Test Resolution Strategy
+
+When encountering a failed test, follow this strict protocol:
+
+1. **Evaluate Test Usefulness**
+   - Is the test validating actual business requirements?
+   - Does the test protect against real bugs or regressions?
+   - Is the test testing implementation details instead of behavior?
+   - If the test is not useful, remove or rewrite it to test behavior
+
+2. **Understand Root Cause**
+   - Read the actual error message and stack trace carefully
+   - Identify whether it's a code issue, test issue, or environment issue
+   - Use debugging tools to step through the code if needed
+   - Check if requirements have changed making the test outdated
+
+3. **Address the Root Cause Properly**
+   - **NEVER** mock away the problem to make tests pass
+   - **NEVER** use lazy fallbacks that hide actual issues
+   - **NEVER** disable or skip tests without documenting why
+   - Fix the actual bug in the code, not the test
+   - If the test is outdated, update it to match new requirements
+   - If mocking is necessary, ensure it accurately represents real behavior
+
+#### Anti-Patterns to Avoid
+
+**Inappropriate Mocking**:
+```typescript
+// BAD: Mocking to hide a real problem
+test('user login', () => {
+  // Don't mock away authentication errors
+  vi.mock('@/services/auth', () => ({
+    login: vi.fn().mockResolvedValue({ success: true }) // Hiding real auth issues
+  }))
+})
+
+// GOOD: Fix the actual authentication logic
+test('user login', () => {
+  // Test with real auth service or proper mock that represents actual behavior
+  const authService = createTestAuthService() // Properly configured test service
+  // Test actual authentication flow
+})
+```
+
+**Lazy Fallbacks**:
+```typescript
+// BAD: Using try-catch to suppress errors
+function getData() {
+  try {
+    return fetchData()
+  } catch {
+    return [] // Lazy fallback hiding real issues
+  }
+}
+
+// GOOD: Handle errors explicitly
+function getData() {
+  try {
+    return fetchData()
+  } catch (error) {
+    logger.error('Failed to fetch data:', error)
+    throw new DataFetchError('Unable to retrieve data', { cause: error })
+  }
+}
+```
 
 ### Pre-commit Testing
 ```bash

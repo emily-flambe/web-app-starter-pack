@@ -90,11 +90,20 @@ Before marking any task complete:
 - [ ] No emojis anywhere
 - [ ] Types are correct (if TypeScript)
 - [ ] Linter passes
-- [ ] Tests pass (if applicable)
+- [ ] Tests pass (if applicable - see test resolution strategy below)
 - [ ] UI renders correctly (if applicable)
 - [ ] API calls work (if applicable)
 - [ ] Documentation updated (if needed)
 - [ ] No console errors or warnings
+
+### Test Resolution Strategy
+When tests fail, **NEVER** force them to pass through inappropriate means:
+1. **First**: Evaluate if the test is actually useful and testing real behavior
+2. **Second**: Understand the root cause of the failure
+3. **Finally**: Fix the actual problem, not the test
+- **NEVER** mock away problems to make tests pass
+- **NEVER** use lazy fallbacks that hide real issues
+- **NEVER** skip tests without proper documentation
 
 ## SECURITY PRACTICES
 

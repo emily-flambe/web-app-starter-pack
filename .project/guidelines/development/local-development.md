@@ -123,9 +123,6 @@ npm run test
 
 # E2E tests with Playwright
 npm run test:e2e
-
-# API tests with MSW mocks
-npm run test:api
 ```
 
 ## Comparison with Alternatives

@@ -3,16 +3,8 @@ name: Deploy
 on:
   push:
     branches: [main]
-  workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Environment to deploy to'
-        required: true
-        default: 'production'
-        type: choice
-        options:
-          - production
-          - staging
+  pull_request:
+    types: [opened, synchronize]
 
 jobs:
   deploy:
@@ -39,27 +31,31 @@ jobs:
       - name: Build application
         run: npm run build
       
-      - name: Deploy to Cloudflare Workers
+      - name: Deploy to Cloudflare
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy
-          environment: ${{ github.event.inputs.environment || 'production' }}
+          command: |
+            if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+              deploy --minify
+            else
+              versions upload
+            fi
       
       - name: Create GitHub deployment
+        if: github.ref == 'refs/heads/main'
         uses: actions/github-script@v7
         with:
           script: |
-            const environment = '${{ github.event.inputs.environment || 'production' }}';
             const deployment = await github.rest.repos.createDeployment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               ref: context.sha,
-              environment: environment,
+              environment: 'production',
               auto_merge: false,
               required_contexts: [],
-              production_environment: environment === 'production'
+              production_environment: true
             });
             
             await github.rest.repos.createDeploymentStatus({
@@ -67,7 +63,20 @@ jobs:
               repo: context.repo.repo,
               deployment_id: deployment.data.id,
               state: 'success',
-              environment_url: environment === 'production' 
-                ? 'https://your-app.workers.dev'
-                : 'https://staging.your-app.workers.dev'
+              environment_url: 'https://web-app-starter-pack.workers.dev'
+            });
+      
+      - name: Comment PR with preview URL
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const sha = context.sha.substring(0, 8);
+            const previewUrl = `https://${sha}-web-app-starter-pack.workers.dev`;
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `### Preview Deployment Ready\n\nYour changes have been deployed to: ${previewUrl}`
             });

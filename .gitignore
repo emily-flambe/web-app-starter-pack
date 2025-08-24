@@ -37,6 +37,12 @@ playwright/.cache/
 
 screenshots/
 
+# Build artifacts
+tsconfig.tsbuildinfo
+
+# Wrangler/Cloudflare
+.wrangler/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

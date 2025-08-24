@@ -508,45 +508,6 @@ async function handleApiRequest(
 }
 ```
 
-### API Testing with MSW
-```typescript
-// src/test/mocks/handlers.ts
-import { http, HttpResponse } from 'msw'
-
-export const handlers = [
-  // Health check
-  http.get('/api/health', () => {
-    return HttpResponse.json({ status: 'ok' })
-  }),
-
-  // User endpoints
-  http.get('/api/users/:id', ({ params }) => {
-    return HttpResponse.json({
-      id: params.id,
-      name: 'Test User',
-      email: 'test@example.com'
-    })
-  }),
-
-  http.post('/api/users', async ({ request }) => {
-    const userData = await request.json()
-    return HttpResponse.json({
-      id: '123',
-      ...userData,
-      createdAt: new Date().toISOString()
-    }, { status: 201 })
-  }),
-
-  // Auth endpoints
-  http.post('/api/auth/token', () => {
-    return HttpResponse.json({
-      access_token: 'mock-access-token',
-      token_type: 'Bearer',
-      expires_in: 3600
-    })
-  })
-]
-```
 
 ## Preview Environments
 

@@ -176,6 +176,18 @@ export async function processRegistration(
 - Keep tests simple and focused
 - Use meaningful test descriptions
 
+### Failed Test Resolution Protocol
+When tests fail, follow this strict approach:
+1. **Evaluate usefulness**: Ensure the test validates real requirements
+2. **Understand root cause**: Debug thoroughly before making changes
+3. **Fix properly**: Address the actual problem, never force tests to pass
+
+**Prohibited Practices**:
+- Using inappropriate mocks to hide real problems
+- Adding lazy fallbacks that suppress errors
+- Skipping tests without proper documentation
+- Testing implementation details instead of behavior
+
 ## Version Control
 
 ### Commit Messages

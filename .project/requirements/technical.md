@@ -11,7 +11,7 @@
   - Improved hydration and streaming SSR support
 
 ### Build System & Tooling
-- **Vite 6.0+**
+- **Vite 7.0+**
   - Requires Node.js 20.19+ or 22.12+
   - Native ESM with rollup 4.x
   - Lightning-fast HMR with instant updates
@@ -55,72 +55,53 @@
   - Mobile device emulation
   - CI/CD integration
 
-### Authentication & Security
-- **Auth0 React SDK 2.4.0+**
-  - OAuth 2.0 / OpenID Connect
-  - Social login providers
-  - Multi-factor authentication
-  - Role-based access control
-  - Token management and refresh
 
 ### Development Tools
 - **ESLint 9.x** with flat config
-- **Prettier 3.x** for code formatting  
-- **Husky** for Git hooks
-- **lint-staged** for pre-commit validation
-- **commitizen** for conventional commits
-
-### API Mocking & Development
-- **MSW (Mock Service Worker) 2.10.x**
-  - Browser and Node.js request interception
-  - Development and testing mocking
-  - TypeScript-first API definitions
-  - Seamless production/mock switching
+- **Prettier 3.x** for code formatting
 
 ## Database Architecture
 
 ### Database Stack
 - **Database**: Cloudflare D1 (SQLite at the edge)
-- **ORM**: Drizzle ORM with type-safe queries
-- **Migrations**: Drizzle Kit for schema management
-- **Development**: Drizzle Studio for visual database management
+- **SQL**: Direct SQL queries with prepared statements
+- **Migrations**: SQL migration files in `db/` directory
+- **Development**: Wrangler D1 commands for local development
 
 ### Database Design Principles
 - **Portability First**: Use standard SQL features only
-- **Repository Pattern**: All database access through repository classes
-- **Type Safety**: Leverage Drizzle's TypeScript integration
-- **Migration Strategy**: Version-controlled schema migrations
+- **Type Safety**: TypeScript interfaces for data models
+- **Migration Strategy**: Version-controlled SQL migration files
+- **Prepared Statements**: Use parameterized queries for security
 - **No Direct Queries**: Components never access database directly
 
 ### Schema Example
-```typescript
-// drizzle/schema.ts
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core'
-
-export const subscriptions = sqliteTable('subscriptions', {
-  id: text('id').primaryKey(),
-  name: text('name').notNull(),
-  states: text('states', { mode: 'json' }).$type<string[]>(),
-  dataTypes: text('data_types', { mode: 'json' }).$type<string[]>(),
-  credits: integer('credits').notNull(),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
-})
+```sql
+-- db/schema.sql
+CREATE TABLE IF NOT EXISTS todos (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  text TEXT NOT NULL,
+  completed INTEGER DEFAULT 0,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
 ```
 
-### Repository Pattern
+### Data Access Pattern
 ```typescript
-// src/lib/db/repositories/subscription.repository.ts
-export class SubscriptionRepository {
-  constructor(private db: Database) {}
-  
-  async create(data: NewSubscription) {
-    return this.db.insert(subscriptions).values(data).returning()
-  }
-  
-  async findById(id: string) {
-    return this.db.select().from(subscriptions).where(eq(subscriptions.id, id))
-  }
+// worker/index.ts
+interface Todo {
+  id: number;
+  text: string;
+  completed: number;  // SQLite uses 0/1 for booleans
+  created_at: number;
+  updated_at: number;
 }
+
+// Example query with prepared statement
+const todo = await c.env.DB.prepare(
+  'SELECT * FROM todos WHERE id = ?'
+).bind(id).first<Todo>();
 ```
 
 ## Deployment Platform
@@ -129,7 +110,7 @@ export class SubscriptionRepository {
 - **Runtime**: V8 isolates with Web API compatibility
 - **Performance**: <10ms cold starts, global edge deployment
 - **Scalability**: Auto-scaling to handle traffic spikes
-- **Database**: Cloudflare D1 (SQLite) with Drizzle ORM
+- **Database**: Cloudflare D1 (SQLite) with prepared statements
 - **Storage**: KV storage for cache, R2 for objects
 - **Cost**: Generous free tier, pay-per-request pricing
 
@@ -137,7 +118,7 @@ export class SubscriptionRepository {
 - **Deployment Agnostic**: Works with Vercel, Netlify, AWS Lambda
 - **API Abstraction**: Platform-independent request/response handling
 - **Environment Variables**: Unified configuration across platforms
-- **Database Abstraction**: Repository pattern with Drizzle ORM
+- **Database Abstraction**: TypeScript interfaces for data models
 - **Portability**: Avoid platform-specific APIs, use standard SQL
 
 ## Architecture Requirements
@@ -145,26 +126,20 @@ export class SubscriptionRepository {
 ### Project Structure
 ```
 src/
-├── components/          # Reusable UI components
-│   ├── ui/             # Basic UI components (buttons, inputs)
-│   └── feature/        # Feature-specific components
-├── features/           # Feature-specific modules
-│   ├── subscription/   # Subscription wizard
-│   └── templates/      # Template management
+├── __tests__/          # Test files
+│   ├── unit/          # Unit tests
+│   └── integration/   # Integration tests
 ├── lib/
-│   ├── db/            # Database abstraction layer
-│   ├── api/           # API client and types
-│   └── auth/          # Authentication setup
-├── hooks/              # Custom React hooks
-├── types/              # Shared TypeScript types
-├── mocks/              # MSW mock handlers
-└── routes/             # React Router setup
-worker/                 # Cloudflare Worker backend
-├── index.ts           # Worker entry point
-└── db/                # Database access layer
-drizzle/
-├── schema.ts          # Drizzle schema definitions
-└── migrations/        # Database migrations
+│   └── api/           # API client and types
+├── App.tsx            # Main application component
+├── main.tsx           # Application entry point
+└── index.css          # Global styles
+worker/                # Cloudflare Worker backend
+└── index.ts          # Worker entry point with API routes
+db/                    # Database files
+├── schema.sql        # Database schema
+├── seed.sql          # Seed data
+└── migrations/       # SQL migration files
 ```
 
 ### Component Architecture
@@ -177,9 +152,8 @@ drizzle/
 ### State Management
 - **React Built-ins**: useState, useReducer, useContext
 - **Server State**: TanStack Query for API data caching
-- **Form State**: React Hook Form for complex forms
-- **Local Storage**: Custom hooks for persistence
-- **URL State**: React Router v6 with type-safe navigation
+- **Local Storage**: Custom hooks for persistence  
+- **URL State**: React Router v7 with type-safe navigation
 
 ## Performance Requirements
 
@@ -204,13 +178,6 @@ drizzle/
 - **Prefetching**: Intelligent resource prefetching
 
 ## Security Requirements
-
-### Authentication & Authorization
-- **JWT Token Handling**: Secure token storage and refresh
-- **Role-Based Access Control**: Granular permission system
-- **Session Management**: Secure session handling
-- **CSRF Protection**: Cross-site request forgery prevention
-- **XSS Prevention**: Content Security Policy implementation
 
 ### Data Protection
 - **Input Validation**: Client and server-side validation
@@ -273,9 +240,8 @@ drizzle/
 
 ### Code Quality Standards
 - **TypeScript Strict Mode**: No any types, strict null checks
-- **ESLint Configuration**: Airbnb + React + TypeScript rules
+- **ESLint Configuration**: React + TypeScript rules
 - **Prettier Integration**: Automatic code formatting
-- **Git Hooks**: Pre-commit linting and testing
 - **Import Organization**: Automatic import sorting and grouping
 
 ### Testing Requirements
@@ -313,9 +279,8 @@ drizzle/
 ### Development Infrastructure
 - **Local Development**: Vite dev server + Wrangler for backend
 - **Hot Reloading**: Sub-second development feedback
-- **Database Management**: Drizzle Kit Studio for visual DB management
-- **Database Migrations**: Drizzle Kit for schema migrations
-- **API Mocking**: MSW for offline development and testing
+- **Database Management**: Wrangler D1 commands for database operations
+- **Database Migrations**: SQL migration files in `db/` directory
 - **Environment Files**: `.env.local` (Vite) and `.dev.vars` (Wrangler)
 
 ### Production Infrastructure

@@ -324,30 +324,6 @@ afterEach(() => {
 })
 ```
 
-### MSW 2.10 Issues
-
-**Problem**: MSW not intercepting requests in tests
-```typescript
-// Requests not being mocked in tests
-const response = await fetch('/api/users')
-```
-
-**Solution**: Properly setup MSW in tests:
-```typescript
-// src/test/mocks/server.ts
-import { setupServer } from 'msw/node'
-import { handlers } from './handlers'
-
-export const server = setupServer(...handlers)
-
-// src/test/setup.ts
-import { beforeAll, afterEach, afterAll } from 'vitest'
-import { server } from './mocks/server'
-
-beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
-afterEach(() => server.resetHandlers())
-afterAll(() => server.close())
-```
 
 ### Playwright Issues
 

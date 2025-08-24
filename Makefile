@@ -45,7 +45,7 @@ build:
 deploy:
 	@echo "Building and deploying to Cloudflare Workers..."
 	npm run build:prod
-	npx wrangler deploy --env=""
+	npx wrangler deploy
 	@echo "✅ Deployment complete!"
 
 # Database sync
