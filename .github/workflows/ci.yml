@@ -53,11 +53,31 @@ jobs:
       - name: Type check
         run: npm run type-check
 
-  # Step 3: Build the application first
+  # Step 3: Unit tests (no build needed)
+  test-unit:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: [lint-and-format, type-check]
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run unit tests
+        run: npm run test
+
+  # Step 4: Build the application
   build:
     name: Build Application
     runs-on: ubuntu-latest
-    needs: [lint-and-format, type-check]
+    needs: [lint-and-format, type-check, test-unit]
     steps:
       - uses: actions/checkout@v4
       
@@ -82,27 +102,7 @@ jobs:
           path: dist/
           retention-days: 7
 
-  # Step 4: Unit & Integration tests
-  test-unit:
-    name: Unit Tests
-    runs-on: ubuntu-latest
-    needs: [build]
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: '.nvmrc'
-          cache: 'npm'
-      
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Run unit tests
-        run: npm run test
-
-  # Step 5: E2E tests (only on builds that pass)
+  # Step 5: E2E tests (need build artifacts)
   test-e2e:
     name: E2E Tests (chromium)
     runs-on: ubuntu-latest
@@ -146,7 +146,7 @@ jobs:
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
-    needs: [test-unit, test-e2e]
+    needs: [test-e2e]
     if: github.event_name == 'push' || github.event_name == 'pull_request'
     permissions:
       contents: read
