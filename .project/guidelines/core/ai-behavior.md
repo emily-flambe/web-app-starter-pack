@@ -59,7 +59,17 @@
 - **NEVER** say "done" without verification
 - **NEVER** assume code works without testing
 
-### 5. TEMPORARY DEBUGGING FILES
+### 5. PREFER SIMPLICITY - RESIST OVERENGINEERING
+- **ALWAYS** choose the simplest solution that meets requirements
+- **NEVER** add abstraction layers "just in case" or for hypothetical future needs
+- **NEVER** create complex architectures when simple functions will do
+- **RESIST** the urge to show off technical knowledge through unnecessary complexity
+- **QUESTION** every additional dependency, library, or framework
+- **PREFER** native solutions over external libraries when reasonable
+- **ASK** "Will this actually be needed?" before adding any feature or abstraction
+- **REMEMBER**: All code is terrible and your job is to write as little as possible while ensuring it works and is easy to maintain
+
+### 6. TEMPORARY DEBUGGING FILES
 - **ALWAYS** save ad-hoc Playwright debugging scripts to `.temp/` folder
 - **ALWAYS** use `.temp/` for one-off test scripts that shouldn't be committed
 - **NEVER** commit temporary debugging scripts to the repository
@@ -71,7 +81,7 @@
 When making any technical decision:
 
 1. **Identify Options**: List all viable approaches
-2. **Analyze Trade-offs**: 
+2. **Analyze Trade-offs**:
    - Performance implications
    - Maintainability
    - Scalability
@@ -88,13 +98,18 @@ Before marking any task complete:
 - [ ] Code runs without errors
 - [ ] No hardcoded secrets
 - [ ] No emojis anywhere
-- [ ] Types are correct (if TypeScript)
-- [ ] Linter passes
-- [ ] Tests pass (if applicable - see test resolution strategy below)
+- [ ] **MANDATORY: Run `npm run lint` - MUST PASS before declaring complete**
+- [ ] **MANDATORY: Run `npm run type-check` - MUST PASS before declaring complete**
+- [ ] **MANDATORY: Run `npm test` - MUST PASS (see test resolution strategy below)**
 - [ ] UI renders correctly (if applicable)
 - [ ] API calls work (if applicable)
 - [ ] Documentation updated (if needed)
 - [ ] No console errors or warnings
+
+**CRITICAL RULE**: NEVER declare work complete or create pull requests without running:
+1. `npm run lint` - Fix ALL errors before proceeding
+2. `npm run type-check` - Fix ALL type errors
+3. `npm test` - Ensure ALL tests pass
 
 ### Test Resolution Strategy
 When tests fail, **NEVER** force them to pass through inappropriate means:
@@ -135,10 +150,12 @@ Remember:
 - Unverified code = Production failures
 - Poor decisions = Technical debt
 - Missing documentation = Future confusion
+- Overengineering = Maintenance nightmare and wasted time
 
 ## SUCCESS CRITERIA
 
 Every piece of code must be:
+- Simple (as simple as possible, but no simpler)
 - Secure
 - Tested
 - Documented

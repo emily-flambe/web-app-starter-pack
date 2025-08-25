@@ -8,15 +8,23 @@ import { z, ZodError } from 'zod';
 const envSchema = z.object({
   // API Configuration
   API_URL: z.string().url().default('http://localhost:8787'),
-  
+
   // Feature Flags
-  ENABLE_ANALYTICS: z.string().optional().default('false').transform(val => val === 'true'),
-  ENABLE_ERROR_TRACKING: z.string().optional().default('false').transform(val => val === 'true'),
-  
+  ENABLE_ANALYTICS: z
+    .string()
+    .optional()
+    .default('false')
+    .transform((val) => val === 'true'),
+  ENABLE_ERROR_TRACKING: z
+    .string()
+    .optional()
+    .default('false')
+    .transform((val) => val === 'true'),
+
   // App Configuration
   APP_NAME: z.string().default('Web App Starter Pack'),
   APP_VERSION: z.string().default('1.0.0'),
-  
+
   // Environment
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   IS_PRODUCTION: z.boolean(),
@@ -43,7 +51,7 @@ const parseEnv = () => {
       const missingVars = error.issues.map((e) => e.path.join('.')).join(', ');
       throw new Error(
         `Missing or invalid environment variables: ${missingVars}\n` +
-        `Please check your .env.local file and ensure all required variables are set.`
+          `Please check your .env.local file and ensure all required variables are set.`
       );
     }
     throw error;

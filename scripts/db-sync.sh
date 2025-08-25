@@ -31,8 +31,8 @@ check_auth() {
 # Function to verify database exists
 verify_database() {
     echo "Verifying database configuration..."
-    local db_name="starter-pack"
-    local db_id="c8403398-e2fc-4a7e-9505-e1e7d11f3a40"
+    local db_name="web-app-starter-pack-db"
+    local db_id="6c31a2e4-6dd6-4fec-84ca-290dc9d97c9e"
     
     # Check if database exists in account
     if npx wrangler d1 list 2>/dev/null | grep -q "$db_id"; then
@@ -62,7 +62,7 @@ export_database() {
         echo "Attempting to export remote database (attempt $((retry_count + 1))/$max_retries)..."
         
         # Capture both stdout and stderr
-        if npx wrangler d1 export starter-pack --remote --output="$export_file" 2>&1 | tee /tmp/wrangler_export.log; then
+        if npx wrangler d1 export web-app-starter-pack-db --remote --output="$export_file" 2>&1 | tee /tmp/wrangler_export.log; then
             if [ -f "$export_file" ]; then
                 local file_size=$(wc -c < "$export_file" 2>/dev/null || echo 0)
                 if [ "$file_size" -gt 0 ]; then
@@ -117,11 +117,11 @@ import_database() {
     
     echo "Clearing local database..."
     # Try to clear known tables, but don't fail if they don't exist
-    npx wrangler d1 execute starter-pack --local --command="DROP TABLE IF EXISTS todos" 2>/dev/null || true
-    npx wrangler d1 execute starter-pack --local --command="DROP TABLE IF EXISTS users" 2>/dev/null || true
+    npx wrangler d1 execute web-app-starter-pack-db --local --command="DROP TABLE IF EXISTS todos" 2>/dev/null || true
+    npx wrangler d1 execute web-app-starter-pack-db --local --command="DROP TABLE IF EXISTS users" 2>/dev/null || true
     
     echo "Importing to local database..."
-    if npx wrangler d1 execute starter-pack --local --file="$import_file"; then
+    if npx wrangler d1 execute web-app-starter-pack-db --local --file="$import_file"; then
         print_success "Database imported successfully"
         return 0
     else
@@ -158,7 +158,7 @@ handle_error() {
             ;;
         3)
             echo "Attempting manual export..."
-            npx wrangler d1 export starter-pack --remote --output=db/manual-export.sql
+            npx wrangler d1 export web-app-starter-pack-db --remote --output=db/manual-export.sql
             echo ""
             read -p "Press any key to continue..." -n 1 -r
             ;;
@@ -215,7 +215,7 @@ main() {
     
     # Show some stats about the sync
     echo "Local database status:"
-    npx wrangler d1 execute starter-pack --local --command="SELECT name FROM sqlite_master WHERE type='table';" 2>/dev/null || echo "No tables found"
+    npx wrangler d1 execute web-app-starter-pack-db --local --command="SELECT name FROM sqlite_master WHERE type='table';" 2>/dev/null || echo "No tables found"
 }
 
 # Trap errors for better handling

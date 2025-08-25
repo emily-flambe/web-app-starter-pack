@@ -11,7 +11,7 @@ window.addEventListener('unhandledrejection', (event) => {
     reason: event.reason,
     promise: event.promise,
   });
-  
+
   // Prevent the default browser behavior (console error)
   event.preventDefault();
 });
@@ -25,7 +25,7 @@ window.addEventListener('error', (event) => {
     colno: event.colno,
     error: event.error,
   });
-  
+
   // Prevent the default browser behavior (console error)
   event.preventDefault();
 });

@@ -19,7 +19,7 @@ interface LogEntry {
 class Logger {
   private isDevelopment = import.meta.env.DEV;
   private isProduction = import.meta.env.PROD;
-  
+
   private log(level: LogLevel, message: string, context?: LogContext) {
     const timestamp = new Date().toISOString();
     const logEntry = {
@@ -37,7 +37,7 @@ class Logger {
         warn: console.warn,
         error: console.error,
       }[level];
-      
+
       consoleMethod(`[${level.toUpperCase()}]`, message, context || '');
     }
 
@@ -48,7 +48,7 @@ class Logger {
       // - Sentry.captureMessage(message, level);
       // - dataDogLogs.logger.log(message, context, level);
       // - customLogEndpoint.send(logEntry);
-      
+
       // For now, we'll store in a buffer that could be sent in batches
       this.buffer.push(logEntry);
       if (this.buffer.length >= this.bufferSize) {
@@ -62,17 +62,17 @@ class Logger {
 
   private flush() {
     if (this.buffer.length === 0) return;
-    
+
     // In a real app, this would send logs to your logging service
     // For now, we'll just clear the buffer
     if (this.isProduction) {
       // TODO: Send buffer to logging endpoint
-      // fetch('/api/logs', { 
-      //   method: 'POST', 
-      //   body: JSON.stringify(this.buffer) 
+      // fetch('/api/logs', {
+      //   method: 'POST',
+      //   body: JSON.stringify(this.buffer)
       // });
     }
-    
+
     this.buffer = [];
   }
 

@@ -5,25 +5,25 @@
  * for intercepting and mocking HTTP requests during tests.
  */
 
-import { describe, it, expect, beforeAll, afterAll, afterEach } from "vitest";
-import { setupServer } from "msw/node";
-import { http, HttpResponse } from "msw";
+import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest';
+import { setupServer } from 'msw/node';
+import { http, HttpResponse } from 'msw';
 
 // Define mock todo data
 const mockTodos = [
-  { id: 1, text: "Test todo 1", completed: false },
-  { id: 2, text: "Test todo 2", completed: true },
+  { id: 1, text: 'Test todo 1', completed: false },
+  { id: 2, text: 'Test todo 2', completed: true },
 ];
 
 // Setup MSW server with handlers
 const server = setupServer(
   // Mock GET /api/todos
-  http.get("http://localhost:8787/api/todos", () => {
+  http.get('http://localhost:8787/api/todos', () => {
     return HttpResponse.json(mockTodos);
   }),
 
   // Mock POST /api/todos
-  http.post("http://localhost:8787/api/todos", async (info) => {
+  http.post('http://localhost:8787/api/todos', async (info) => {
     const body = (await info.request.json()) as { text: string };
     const newTodo = {
       id: 3,
@@ -34,7 +34,7 @@ const server = setupServer(
   }),
 
   // Mock PUT /api/todos/:id
-  http.put("http://localhost:8787/api/todos/:id", async (info) => {
+  http.put('http://localhost:8787/api/todos/:id', async (info) => {
     const id = Number(info.params.id);
     const body = (await info.request.json()) as {
       text?: string;
@@ -51,7 +51,7 @@ const server = setupServer(
   }),
 
   // Mock DELETE /api/todos/:id
-  http.delete("http://localhost:8787/api/todos/:id", (info) => {
+  http.delete('http://localhost:8787/api/todos/:id', (info) => {
     const id = Number(info.params.id);
     const todo = mockTodos.find((t) => t.id === id);
 
@@ -63,13 +63,13 @@ const server = setupServer(
   }),
 
   // Mock health check
-  http.get("http://localhost:8787/api/health", () => {
+  http.get('http://localhost:8787/api/health', () => {
     return HttpResponse.json({
-      status: "ok",
+      status: 'ok',
       timestamp: new Date().toISOString(),
-      message: "Todo API is running",
+      message: 'Todo API is running',
     });
-  }),
+  })
 );
 
 // Start server before all tests
@@ -81,13 +81,13 @@ afterEach(() => server.resetHandlers());
 // Clean up after all tests
 afterAll(() => server.close());
 
-describe("API Client Integration", () => {
+describe('API Client Integration', () => {
   // These tests use MSW to mock HTTP responses, allowing us to test
   // API interactions without needing a running backend server.
 
-  describe("Health Check", () => {
-    it("should successfully check API health", async () => {
-      const response = await fetch("http://localhost:8787/api/health");
+  describe('Health Check', () => {
+    it('should successfully check API health', async () => {
+      const response = await fetch('http://localhost:8787/api/health');
       const data = (await response.json()) as {
         status: string;
         message: string;
@@ -95,14 +95,14 @@ describe("API Client Integration", () => {
       };
 
       expect(response.ok).toBe(true);
-      expect(data.status).toBe("ok");
-      expect(data.message).toBe("Todo API is running");
+      expect(data.status).toBe('ok');
+      expect(data.message).toBe('Todo API is running');
     });
   });
 
-  describe("Todo Operations", () => {
-    it("should fetch all todos", async () => {
-      const response = await fetch("http://localhost:8787/api/todos");
+  describe('Todo Operations', () => {
+    it('should fetch all todos', async () => {
+      const response = await fetch('http://localhost:8787/api/todos');
       const todos = (await response.json()) as Array<{
         id: number;
         text: string;
@@ -111,14 +111,14 @@ describe("API Client Integration", () => {
 
       expect(response.ok).toBe(true);
       expect(todos).toHaveLength(2);
-      expect(todos[0].text).toBe("Test todo 1");
+      expect(todos[0].text).toBe('Test todo 1');
     });
 
-    it("should create a new todo", async () => {
-      const response = await fetch("http://localhost:8787/api/todos", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: "New todo" }),
+    it('should create a new todo', async () => {
+      const response = await fetch('http://localhost:8787/api/todos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: 'New todo' }),
       });
       const todo = (await response.json()) as {
         id: number;
@@ -127,14 +127,14 @@ describe("API Client Integration", () => {
       };
 
       expect(response.status).toBe(201);
-      expect(todo.text).toBe("New todo");
+      expect(todo.text).toBe('New todo');
       expect(todo.completed).toBe(false);
     });
 
-    it("should update an existing todo", async () => {
-      const response = await fetch("http://localhost:8787/api/todos/1", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
+    it('should update an existing todo', async () => {
+      const response = await fetch('http://localhost:8787/api/todos/1', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ completed: true }),
       });
       const todo = (await response.json()) as {
@@ -148,18 +148,18 @@ describe("API Client Integration", () => {
       expect(todo.completed).toBe(true);
     });
 
-    it("should delete a todo", async () => {
-      const response = await fetch("http://localhost:8787/api/todos/1", {
-        method: "DELETE",
+    it('should delete a todo', async () => {
+      const response = await fetch('http://localhost:8787/api/todos/1', {
+        method: 'DELETE',
       });
 
       expect(response.status).toBe(204);
     });
 
-    it("should return 404 for non-existent todo", async () => {
-      const response = await fetch("http://localhost:8787/api/todos/999", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
+    it('should return 404 for non-existent todo', async () => {
+      const response = await fetch('http://localhost:8787/api/todos/999', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ completed: true }),
       });
 
@@ -167,34 +167,33 @@ describe("API Client Integration", () => {
     });
   });
 
-  describe("Error Handling", () => {
-    it("should handle network errors gracefully", async () => {
+  describe('Error Handling', () => {
+    it('should handle network errors gracefully', async () => {
       // Override the handler to simulate a network error
       server.use(
-        http.get("http://localhost:8787/api/todos", () => {
+        http.get('http://localhost:8787/api/todos', () => {
           return HttpResponse.error();
-        }),
+        })
       );
 
       try {
-        await fetch("http://localhost:8787/api/todos");
+        await fetch('http://localhost:8787/api/todos');
       } catch (error) {
         expect(error).toBeDefined();
       }
     });
 
-    it("should handle 500 server errors", async () => {
+    it('should handle 500 server errors', async () => {
       // Override the handler to return a 500 error
       server.use(
-        http.get("http://localhost:8787/api/todos", () => {
-          return new HttpResponse(
-            JSON.stringify({ error: "Internal Server Error" }),
-            { status: 500 },
-          );
-        }),
+        http.get('http://localhost:8787/api/todos', () => {
+          return new HttpResponse(JSON.stringify({ error: 'Internal Server Error' }), {
+            status: 500,
+          });
+        })
       );
 
-      const response = await fetch("http://localhost:8787/api/todos");
+      const response = await fetch('http://localhost:8787/api/todos');
       expect(response.status).toBe(500);
     });
   });
