@@ -6,6 +6,10 @@
 
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
+import { securityHeaders } from './middleware/security';
+import { apiRateLimit } from './middleware/rateLimit';
+import { validate } from './middleware/validation';
+import { createTodoSchema, updateTodoSchema, todoIdSchema } from './validators/todo';
 
 // TypeScript types for our data
 interface Todo {
@@ -19,14 +23,31 @@ interface Todo {
 // Environment bindings
 interface Bindings {
   DB: D1Database;
+  ENVIRONMENT?: string; // 'development' | 'production'
 }
 
-// Create Hono app
-const app = new Hono<{ Bindings: Bindings }>();
+// Create Hono app with context types
+const app = new Hono<{ 
+  Bindings: Bindings;
+  Variables: {
+    validatedBody?: unknown;
+    validatedParams?: unknown;
+    validatedQuery?: unknown;
+  };
+}>();
 
-// Enable CORS for frontend - includes common Vite dev server ports
-app.use('*', cors({
-  origin: [
+// Configure CORS based on environment
+const getCorsOrigins = (env?: string) => {
+  // In production, replace with your actual production URL
+  if (env === 'production') {
+    return [
+      'https://web-app-starter-pack.workers.dev',
+      'https://your-custom-domain.com', // Add your production domain
+    ];
+  }
+  
+  // Development origins
+  return [
     'http://localhost:3000',
     'http://localhost:5173',
     'http://localhost:5174', 
@@ -34,9 +55,24 @@ app.use('*', cors({
     'http://localhost:5176',
     'http://localhost:5177',
     'http://localhost:5178'
-  ],
-  credentials: true,
-}));
+  ];
+};
+
+// Apply middleware
+app.use('*', async (c, next) => {
+  // Apply CORS with environment-specific origins
+  const corsMiddleware = cors({
+    origin: getCorsOrigins(c.env.ENVIRONMENT),
+    credentials: true,
+  });
+  return corsMiddleware(c, next);
+});
+
+// Security headers
+app.use('*', securityHeaders);
+
+// Rate limiting for API routes
+app.use('/api/*', apiRateLimit);
 
 // Health check endpoint
 app.get('/api/health', (c) => {
@@ -90,19 +126,15 @@ app.get('/api/todos/:id', async (c) => {
   }
 });
 
-// Create todo
-app.post('/api/todos', async (c) => {
+// Create todo with validation
+app.post('/api/todos', validate.body(createTodoSchema), async (c) => {
   try {
-    const body = await c.req.json<{ text: string }>();
-    
-    if (!body.text || body.text.trim() === '') {
-      return c.json({ error: 'Text is required' }, 400);
-    }
+    const body = c.get('validatedBody') as { text: string };
     
     const now = Math.floor(Date.now() / 1000);
     const result = await c.env.DB.prepare(
       'INSERT INTO todos (text, completed, created_at, updated_at) VALUES (?, ?, ?, ?)'
-    ).bind(body.text.trim(), 0, now, now).run();
+    ).bind(body.text, 0, now, now).run();
     
     if (!result.success) {
       throw new Error('Failed to insert todo');
@@ -111,7 +143,7 @@ app.post('/api/todos', async (c) => {
     // Return the created todo
     const newTodo = {
       id: result.meta.last_row_id,
-      text: body.text.trim(),
+      text: body.text,
       completed: false,
       created_at: now,
       updated_at: now
@@ -124,11 +156,11 @@ app.post('/api/todos', async (c) => {
   }
 });
 
-// Update todo
-app.put('/api/todos/:id', async (c) => {
+// Update todo with validation
+app.put('/api/todos/:id', validate.params(todoIdSchema), validate.body(updateTodoSchema), async (c) => {
   try {
-    const id = parseInt(c.req.param('id'));
-    const body = await c.req.json<{ text?: string; completed?: boolean }>();
+    const { id } = c.get('validatedParams') as { id: number };
+    const body = c.get('validatedBody') as { text?: string; completed?: boolean };
     
     // Build dynamic update query
     const updates: string[] = [];
