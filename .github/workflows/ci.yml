@@ -184,9 +184,9 @@ jobs:
             echo "Creating preview deployment..."
             OUTPUT=$(npx wrangler versions upload 2>&1)
             echo "$OUTPUT"
-            # Extract the preview URL from the output
-            # Pattern matches: https://[version-id]-web-app-starter-pack.[username].workers.dev
-            PREVIEW_URL=$(echo "$OUTPUT" | grep -o 'https://[a-f0-9\-]*-web-app-starter-pack\.[a-z\-]*\.workers\.dev' | head -1)
+            # Extract the preview URL from the output (looking for "Version Preview URL: " line)
+            PREVIEW_URL=$(echo "$OUTPUT" | grep "Version Preview URL:" | sed 's/.*Version Preview URL: //')
+            echo "Preview URL extracted: $PREVIEW_URL"
             echo "deployment_url=$PREVIEW_URL" >> $GITHUB_OUTPUT
           fi
       
