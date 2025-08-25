@@ -196,10 +196,10 @@ db/                    # Database files
 ## Browser Support
 
 ### Modern Browser Targets
-- **Chrome**: 120+ (95% market coverage)
-- **Firefox**: 120+ (90% market coverage)  
-- **Safari**: 17+ (iOS 17+, macOS Sonoma+)
-- **Edge**: 120+ (Chromium-based)
+- **Chrome**: 120+ (Primary testing target)
+- **Firefox**: 120+ (Should work, not actively tested)  
+- **Safari**: 17+ (Should work, not actively tested)
+- **Edge**: 120+ (Chromium-based, should work)
 
 ### Feature Requirements
 - **ES2022 Support**: Native async/await, optional chaining, nullish coalescing

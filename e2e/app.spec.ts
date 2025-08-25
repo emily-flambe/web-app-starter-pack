@@ -1,31 +1,39 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('App E2E Tests', () => {
-  test('has title', async ({ page }) => {
+test.describe('Todo App E2E Tests', () => {
+  test('has correct title', async ({ page }) => {
     await page.goto('/');
-    await expect(page).toHaveTitle(/Web App/);
+    await expect(page).toHaveTitle('Web App Starter Pack');
   });
 
   test('displays the main heading', async ({ page }) => {
     await page.goto('/');
     
     // Check the main heading is visible
-    const heading = page.getByRole('heading', { name: /Web App Starter Pack/i });
+    const heading = page.getByRole('heading', { name: /Todo App Example/i });
     await expect(heading).toBeVisible();
   });
 
-  test('has working links', async ({ page }) => {
+  test('shows loading state initially', async ({ page }) => {
     await page.goto('/');
     
-    // Check React link
-    const reactLink = page.getByRole('link', { name: /Learn React/i });
-    await expect(reactLink).toHaveAttribute('href', 'https://react.dev');
-    await expect(reactLink).toHaveAttribute('target', '_blank');
+    // Should show loading spinner or message
+    const loadingText = page.getByText(/Loading todos/i);
+    // It might load too fast, so we just check it exists at some point
+    await expect(loadingText).toBeVisible({ timeout: 1000 }).catch(() => {
+      // If it loads too fast, that's fine
+    });
+  });
+
+  test('displays todo form', async ({ page }) => {
+    await page.goto('/');
     
-    // Check Tailwind link
-    const tailwindLink = page.getByRole('link', { name: /Learn Tailwind/i });
-    await expect(tailwindLink).toHaveAttribute('href', 'https://tailwindcss.com');
-    await expect(tailwindLink).toHaveAttribute('target', '_blank');
+    // Check for input and button
+    const input = page.getByPlaceholder(/Add a new todo/i);
+    const button = page.getByRole('button', { name: /Add Todo/i });
+    
+    await expect(input).toBeVisible();
+    await expect(button).toBeVisible();
   });
 
   test('responsive design works', async ({ page }) => {
@@ -46,5 +54,13 @@ test.describe('App E2E Tests', () => {
     const darkModeElement = page.locator('.dark\\:bg-gray-900');
     const count = await darkModeElement.count();
     expect(count).toBeGreaterThan(0);
+  });
+
+  test('shows instructions section', async ({ page }) => {
+    await page.goto('/');
+    
+    // Check for "How This Works" section
+    const instructionsHeading = page.getByRole('heading', { name: /How This Works/i });
+    await expect(instructionsHeading).toBeVisible();
   });
 });

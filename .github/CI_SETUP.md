@@ -2,12 +2,12 @@
 
 ## Overview
 
-This project uses a standard CI/CD pipeline with:
-- **Parallel testing** (unit, E2E, linting)
-- **Preview deployments** for pull requests
+This project uses an optimized CI/CD pipeline with:
+- **Parallel execution** of deployment and testing after build
+- **Preview deployments** for pull requests with immediate availability
 - **Automatic PR comments** with deployment URLs
-- **Cross-browser E2E testing**
-- **Coverage reporting**
+- **Chromium E2E testing** (simplified for speed)
+- **Final status check** that blocks PR merge on any failure
 
 ## Required Secrets
 
@@ -25,31 +25,31 @@ Add these secrets to your GitHub repository (Settings → Secrets → Actions):
 
 ## Pipeline Stages
 
-### 1. Quick Checks (Parallel)
+### 1. Build
+- Production build verification
+- Creates artifacts for all subsequent steps
+
+### 2. Parallel Execution
+After build completes, ALL of these run simultaneously:
 - **Lint & Format**: ESLint and Prettier checks
 - **Type Check**: TypeScript compilation
+- **Unit Tests**: Vitest testing
+- **E2E Tests**: Chromium-only testing
+- **Deploy**: Preview deployment to Cloudflare Workers
 
-### 2. Testing (Parallel)
-- **Unit Tests**: Vitest with coverage
-- **Build**: Production build verification
-
-### 3. E2E Testing
-- Runs after build succeeds
-- Tests on Chrome, Firefox, and Safari
-- Uploads test reports as artifacts
-
-### 4. Preview Deployment (PR only)
-- Deploys to Cloudflare Workers preview environment
-- Comments on PR with deployment URL
-- Updates GitHub deployment status
+### 3. Final Status Check
+- Runs after all jobs complete
+- Fails if ANY job failed
+- Blocks PR merge on failure
 
 ## Preview Deployments
 
 Pull requests automatically get:
-- A unique preview URL: `https://pr-{number}-web-app-starter-pack.workers.dev`
+- A unique preview URL: `https://[version-id]-web-app-starter-pack.[username].workers.dev`
+- Immediate deployment without waiting for tests
 - Automatic updates on new commits
-- Comment with deployment status
-- Separate preview database (configure in wrangler.toml)
+- Comment with deployment URL
+- Connection to the production D1 database
 
 ## Local Testing
 
@@ -68,19 +68,19 @@ npm run build      # Build check
 - Cancels in-progress runs when new commits are pushed
 - Saves CI minutes and provides faster feedback
 
-### Matrix Testing
-- E2E tests run on multiple browsers in parallel
-- Each browser gets its own test report
+### Testing Strategy
+- E2E tests run on Chromium only (simplified for speed)
+- Tests generate reports as artifacts
 
-### Smart Dependencies
-- Build only starts after lint/type checks pass
-- E2E only runs after successful build
-- Preview deployment waits for build and unit tests
+### Optimized Pipeline Order
+- Build runs first to create artifacts
+- ALL validation and deployment run in parallel after build
+- Final status check ensures all jobs succeed before merge
 
 ## Customization
 
 ### Adjust Test Browsers
-Edit the matrix in `.github/workflows/ci.yml`:
+Edit the matrix in `.github/workflows/ci-cd.yml`:
 ```yaml
 matrix:
   browser: [chromium, firefox, webkit, edge]

@@ -13,7 +13,7 @@ This guide outlines a basic deployment strategy using a single Cloudflare Worker
 - **Deployment**: Automatic on push to `main`
 
 **Preview**
-- **URL**: `[hash]-web-app-starter-pack.workers.dev`
+- **URL**: `[version-id]-web-app-starter-pack.[username].workers.dev`
 - **Worker**: Same worker, preview versions
 - **Branch**: Any feature branch
 - **Deployment**: Automatic on PR creation/update
@@ -53,33 +53,22 @@ database_id = "your_production_db_id"
 
 ### GitHub Actions
 
-**.github/workflows/deploy.yml**
-```yaml
-name: Deploy
+Our CI/CD pipeline (`.github/workflows/ci-cd.yml`) handles deployment automatically:
 
-on:
-  push:
-    branches: [main]
-  pull_request:
-    types: [opened, synchronize]
+1. **Build** - Creates production artifacts
+2. **Parallel Execution** - All validation and deployment run simultaneously:
+   - Lint & TypeScript checks
+   - Unit & E2E tests (Chromium only)
+   - Deploy to preview/production
+3. **Final Status Check** - Blocks PR merge on any failure
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+Key deployment logic:
+```bash
+# Production (main branch)
+npx wrangler deploy --minify
 
-      - name: Deploy to Cloudflare
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: |
-            if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-              deploy --minify
-            else
-              versions upload
-            fi
+# Preview (pull requests)
+npx wrangler versions upload
 ```
 
 ## URL Structure
@@ -87,7 +76,7 @@ jobs:
 | Environment | URL | Trigger |
 |------------|-----|---------|
 | Production | `web-app-starter-pack.workers.dev` | Push to `main` |
-| Preview | `[hash]-web-app-starter-pack.workers.dev` | Pull request opened/updated |
+| Preview | `[version-id]-web-app-starter-pack.[username].workers.dev` | Pull request opened/updated |
 
 ## Database Strategy
 
@@ -100,11 +89,11 @@ jobs:
   npx wrangler d1 execute web-app-starter-pack-db --file=./db/seed.sql --remote
   ```
 
-## Authentication
+## Secrets Management
 
 - Use environment variables for API keys
 - Store secrets in GitHub Secrets
-- Auth0 or similar can use wildcard matching for preview URLs: `*.workers.dev`
+- Add both to GitHub Actions secrets and Dependabot secrets if needed
 
 ## Quick Start
 

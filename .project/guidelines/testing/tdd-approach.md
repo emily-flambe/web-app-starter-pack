@@ -9,14 +9,14 @@ Our TDD approach emphasizes **confidence through comprehensive testing** with a 
 ### Core Testing Framework
 - **Vitest 3.2.x**: Next-generation testing framework with native ESM support and 10x faster than Jest
 - **React Testing Library 16.3.0**: Component testing with React 19 support and new hooks
-- **Playwright**: End-to-end testing with multi-browser support and visual regression testing
+- **Playwright**: End-to-end testing with Chromium browser and visual regression testing
 
 ### Testing Pyramid
 
 ```
     /\     E2E Tests (Playwright)
    /  \    - Critical user journeys
-  /    \   - Cross-browser compatibility
+  /    \   - Chromium browser testing
  /______\  - Visual regression testing
 /        \ 
 |  Integration Tests (Vitest + RTL)
