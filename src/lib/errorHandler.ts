@@ -31,7 +31,7 @@ window.addEventListener('error', (event) => {
 });
 
 // Export a function to manually report errors
-export function reportError(error: Error, context?: Record<string, any>) {
+export function reportError(error: Error, context?: Record<string, unknown>) {
   logger.error('Manual error report', {
     error: error.message,
     stack: error.stack,

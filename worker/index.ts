@@ -30,9 +30,9 @@ interface Bindings {
 const app = new Hono<{ 
   Bindings: Bindings;
   Variables: {
-    validatedBody?: any;
-    validatedParams?: any;
-    validatedQuery?: any;
+    validatedBody?: unknown;
+    validatedParams?: unknown;
+    validatedQuery?: unknown;
   };
 }>();
 

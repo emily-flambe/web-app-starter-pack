@@ -6,7 +6,14 @@
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 interface LogContext {
-  [key: string]: any;
+  [key: string]: unknown;
+}
+
+interface LogEntry {
+  timestamp: string;
+  level: LogLevel;
+  message: string;
+  [key: string]: unknown;
 }
 
 class Logger {
@@ -50,7 +57,7 @@ class Logger {
     }
   }
 
-  private buffer: any[] = [];
+  private buffer: LogEntry[] = [];
   private bufferSize = 10;
 
   private flush() {
@@ -86,7 +93,7 @@ class Logger {
   }
 
   // Track user actions for analytics
-  track(event: string, properties?: Record<string, any>) {
+  track(event: string, properties?: Record<string, unknown>) {
     if (import.meta.env.VITE_ENABLE_ANALYTICS === 'true') {
       this.info('Analytics Event', { event, properties });
       // TODO: Send to analytics service

@@ -1,10 +1,10 @@
-import { MiddlewareHandler } from 'hono';
+import { Context, MiddlewareHandler } from 'hono';
 
 interface RateLimitOptions {
   windowMs: number;  // Time window in milliseconds
   max: number;       // Max requests per window
   message?: string;  // Error message
-  keyGenerator?: (c: any) => string; // Function to generate key
+  keyGenerator?: (c: Context) => string; // Function to generate key
 }
 
 // Simple in-memory store (consider using KV or Durable Objects for production)
