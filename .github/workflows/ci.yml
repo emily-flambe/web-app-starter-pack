@@ -171,6 +171,7 @@ jobs:
           path: dist/
       
       - name: Deploy to Cloudflare
+        id: deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -178,9 +179,14 @@ jobs:
           if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
             echo "Deploying to production..."
             npx wrangler deploy --minify
+            echo "deployment_url=https://web-app-starter-pack.workers.dev" >> $GITHUB_OUTPUT
           else
             echo "Creating preview deployment..."
-            npx wrangler versions upload
+            OUTPUT=$(npx wrangler versions upload 2>&1)
+            echo "$OUTPUT"
+            # Extract the preview URL from the output
+            PREVIEW_URL=$(echo "$OUTPUT" | grep -o 'https://[a-f0-9\-]*\..*\.workers\.dev' | head -1)
+            echo "deployment_url=$PREVIEW_URL" >> $GITHUB_OUTPUT
           fi
       
       - name: Create GitHub deployment
@@ -207,14 +213,13 @@ jobs:
             });
       
       - name: Comment PR with preview URL
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && steps.deploy.outputs.deployment_url
         continue-on-error: true
         uses: actions/github-script@v7
         with:
           script: |
             try {
-              const sha = context.sha.substring(0, 8);
-              const previewUrl = `https://${sha}-web-app-starter-pack.workers.dev`;
+              const previewUrl = '${{ steps.deploy.outputs.deployment_url }}';
               
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
