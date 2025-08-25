@@ -42,6 +42,7 @@ tsconfig.tsbuildinfo
 
 # Wrangler/Cloudflare
 .wrangler/
+.dev.vars
 
 # Editor directories and files
 .vscode/*
