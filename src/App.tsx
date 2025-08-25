@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { apiClient, type Todo } from "./lib/api/client";
+import { logger } from "./lib/logger";
 
 function App() {
   const [todos, setTodos] = useState<Todo[]>([]);
@@ -20,7 +21,7 @@ function App() {
       setTodos(data);
     } catch (err) {
       setError("Failed to load todos. Make sure the backend is running!");
-      console.error("Error loading todos:", err);
+      logger.error("Error loading todos", { error: String(err) });
     } finally {
       setLoading(false);
     }
@@ -37,7 +38,7 @@ function App() {
       setNewTodoText("");
     } catch (err) {
       setError("Failed to add todo");
-      console.error("Error adding todo:", err);
+      logger.error("Error adding todo", { error: String(err) });
     }
   };
 
@@ -48,7 +49,7 @@ function App() {
       setTodos(todos.map((todo) => (todo.id === id ? updated : todo)));
     } catch (err) {
       setError("Failed to update todo");
-      console.error("Error toggling todo:", err);
+      logger.error("Error toggling todo", { error: String(err) });
     }
   };
 
@@ -59,7 +60,7 @@ function App() {
       setTodos(todos.filter((todo) => todo.id !== id));
     } catch (err) {
       setError("Failed to delete todo");
-      console.error("Error deleting todo:", err);
+      logger.error("Error deleting todo", { error: String(err) });
     }
   };
 
