@@ -2,7 +2,7 @@
 
 Production-ready monorepo starter with React, Cloudflare Workers, and D1 database. Battle-tested stack without the setup overhead.
 
-## 🚀 Quick Start
+## Quick Start
 
 ```bash
 # Automated setup (recommended)
@@ -17,12 +17,24 @@ Backend: http://localhost:8787
 
 The starter includes a **working Todo app** demonstrating full-stack TypeScript with API calls, CRUD operations, and database persistence.
 
-## 📋 Prerequisites
+**New to the template?** See the [step-by-step setup guide](.project/docs/explainers/setup-steps.md) for detailed instructions.
+
+### Pro Tip: Claude Code Alias
+
+Create an alias to ensure Claude always reads the project guidelines:
+
+```bash
+alias claudia='claude "Start by running ls -la and then read and understand the steering and documentation in the .project/ directory. Pay EXTRA CAREFUL attention to any files guiding AI behavior. Never say '\''you'\''re absolutely right'\'' ever!!! ALWAYS follow ALL guidelines and standards defined in these files throughout our conversation."'
+```
+
+Then use `claudia` instead of `claude` when working on this project.
+
+## Prerequisites
 
 - **Node.js 20.11.0** via nvm (`.nvmrc` included)
 - **Cloudflare account** ([free signup](https://dash.cloudflare.com/sign-up))
 
-## 🛠️ Cloudflare Deployment
+## Cloudflare Deployment
 
 You'll need a Cloudflare account (free tier works). The `make setup` command handles all configuration interactively (authentication, database creation, schema initialization).
 
@@ -31,7 +43,7 @@ For production deployment after setup:
 make deploy
 ```
 
-## 🧰 Make Commands
+## Make Commands
 
 ```bash
 make help     # Show all available commands
@@ -45,7 +57,7 @@ make clean    # Clean build artifacts
 make db-sync  # Sync remote database to local
 ```
 
-## 📚 Technology Stack
+## Technology Stack
 
 - **Frontend**: React 18, TypeScript, Vite, Tailwind CSS
 - **Backend**: Cloudflare Workers, Hono framework
@@ -53,7 +65,7 @@ make db-sync  # Sync remote database to local
 - **Testing**: Jest (unit), Playwright (E2E)
 - **CI/CD**: GitHub Actions
 
-## 📖 Documentation
+## Documentation
 
 Detailed documentation is available in the `.project/` directory:
 
@@ -71,7 +83,7 @@ Detailed documentation is available in the `.project/` directory:
 - **React Standards**: `.project/guidelines/languages/react-standards.md`
 - **TypeScript Standards**: `.project/guidelines/languages/typescript-standards.md`
 
-## 🚀 CI/CD Pipeline
+## CI/CD Pipeline
 
 ### GitHub Actions Required Secrets
 ```
@@ -81,6 +93,6 @@ CLOUDFLARE_ACCOUNT_ID   # Your Cloudflare account ID
 
 Set these in your GitHub repository: Settings → Secrets → Actions
 
-## 📄 License
+## License
 
 MIT License - see [LICENSE](LICENSE) file for details.
