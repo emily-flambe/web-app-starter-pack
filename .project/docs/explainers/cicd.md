@@ -17,15 +17,10 @@ The pipeline runs automatically on:
 - **Linting** ensures code follows our style guidelines
 - **TypeScript** verifies all types are correct
 
-If either fails, the pipeline stops here. No point building broken code.
+If either fails, the pipeline continues but the final status check will fail.
 
-### Step 2: Unit Tests
-Once the code passes basic checks, we run unit tests. These test individual functions and components in isolation. They're fast because they don't need a full build - they test the source code directly.
-
-If tests fail, we stop here. No point building code with broken logic.
-
-### Step 3: Build
-Now that we know the code is valid and the logic works, we build the application. This:
+### Step 2: Build
+Once the code passes basic checks, we build the application. This:
 - Bundles all the JavaScript/TypeScript
 - Processes CSS with Tailwind
 - Optimizes everything for production
@@ -33,40 +28,50 @@ Now that we know the code is valid and the logic works, we build the application
 
 The build artifacts are saved so later steps can reuse them.
 
-### Step 4: E2E Tests
-With a built application, we run end-to-end tests using Playwright. These:
+### Step 3: Parallel Testing and Deployment
+After the build completes, three things happen simultaneously:
+
+**Unit Tests** - Test individual functions and components in isolation. They run on the source code directly.
+
+**E2E Tests** - Run end-to-end tests using Playwright:
 - Start a real browser (Chromium)
-- Load the actual app
+- Load the actual app from the build
 - Click buttons, fill forms, and verify everything works
 - Test the app exactly as a user would experience it
 
-These tests use the build from Step 3, so we don't build twice.
-
-### Step 5: Deploy
-Only after everything passes do we deploy:
+**Deploy** - Deploy the application immediately:
 - **Main branch**: Deploys to production at `web-app-starter-pack.workers.dev`
-- **Pull requests**: Creates preview deployments at `[hash]-web-app-starter-pack.workers.dev`
+- **Pull requests**: Creates preview deployments at unique URLs like `[version-id]-web-app-starter-pack.workers.dev`
 
-The deployment uses the same build artifacts from Step 3, ensuring what we tested is exactly what gets deployed.
+All three run in parallel to maximize speed. The deployment uses the same build artifacts, ensuring consistency.
+
+### Step 4: Final Status Check
+After all jobs complete (pass or fail), a final status check runs. This job:
+- Checks the result of every previous job
+- Fails if ANY job failed
+- This is what blocks PR merging - you can't merge if this check fails
+
+This ensures that even though we deploy before tests complete, we can't merge broken code to main.
 
 ## Why This Order?
 
-This is called the "hybrid approach" and it's optimal because:
+This approach prioritizes speed and developer experience:
 
-1. **Fail fast on cheap operations**: Linting and type-checking are nearly instant. If these fail, we know immediately without wasting time on builds or tests.
+1. **Fail fast on cheap operations**: Linting and type-checking are nearly instant. These run first to catch obvious issues.
 
-2. **Test logic before building**: Unit tests run on source code without needing a build. If the logic is broken, why waste time bundling it?
+2. **Build early**: We build right after basic checks pass. This gives us artifacts that all subsequent steps can use.
 
-3. **Build once, use everywhere**: We build the app once and reuse those artifacts for both E2E tests and deployment. This ensures consistency and saves time.
+3. **Maximum parallelization**: Tests and deployment run simultaneously, not sequentially. This dramatically reduces total pipeline time.
 
-4. **Test what you deploy**: E2E tests run on the exact build that will be deployed, not on development code. This catches bundling issues, optimization problems, or environment-specific bugs.
+4. **Immediate preview deployments**: Developers get a preview URL as fast as possible, without waiting for tests. This enables:
+   - Quick manual testing
+   - Sharing with stakeholders
+   - Visual verification
+   - Real-world testing
 
-5. **Deploy with confidence**: By the time we deploy, we know:
-   - The code is properly formatted
-   - All types are correct
-   - The business logic works (unit tests)
-   - The app builds successfully
-   - Users can actually use it (E2E tests)
+5. **Safety through final check**: The final status check ensures we can't merge broken code, even though we deployed before tests finished. If tests fail, the PR is blocked from merging.
+
+6. **Best of both worlds**: We get the speed of immediate deployment with the safety of comprehensive testing. Preview deployments can be "broken" temporarily, but main branch is always protected.
 
 ## Configuration
 

@@ -53,31 +53,11 @@ jobs:
       - name: Type check
         run: npm run type-check
 
-  # Step 3: Unit tests (no build needed)
-  test-unit:
-    name: Unit Tests
-    runs-on: ubuntu-latest
-    needs: [lint-and-format, type-check]
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: '.nvmrc'
-          cache: 'npm'
-      
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Run unit tests
-        run: npm run test
-
-  # Step 4: Build the application
+  # Step 3: Build the application first
   build:
     name: Build Application
     runs-on: ubuntu-latest
-    needs: [lint-and-format, type-check, test-unit]
+    needs: [lint-and-format, type-check]
     steps:
       - uses: actions/checkout@v4
       
@@ -102,7 +82,27 @@ jobs:
           path: dist/
           retention-days: 7
 
-  # Step 5: E2E tests (need build artifacts)
+  # Step 4a: Unit tests (run in parallel with deploy)
+  test-unit:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run unit tests
+        run: npm run test
+
+  # Step 4b: E2E tests (run in parallel with deploy)
   test-e2e:
     name: E2E Tests (chromium)
     runs-on: ubuntu-latest
@@ -142,11 +142,11 @@ jobs:
           path: playwright-report/
           retention-days: 30
 
-  # Step 6: Deploy after all tests pass
+  # Step 4c: Deploy (run in parallel with tests)
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
-    needs: [test-e2e]
+    needs: [build]
     if: github.event_name == 'push' || github.event_name == 'pull_request'
     permissions:
       contents: read
@@ -230,3 +230,32 @@ jobs:
             } catch (error) {
               console.log('Could not comment on PR (expected for Dependabot PRs):', error.message);
             }
+
+  # Step 5: Final status check (blocks PR merge if anything fails)
+  ci-status:
+    name: CI Status Check
+    runs-on: ubuntu-latest
+    needs: [lint-and-format, type-check, build, test-unit, test-e2e, deploy]
+    if: always()
+    steps:
+      - name: Check overall status
+        run: |
+          echo "Checking status of all jobs..."
+          echo "Lint & Format: ${{ needs.lint-and-format.result }}"
+          echo "Type Check: ${{ needs.type-check.result }}"
+          echo "Build: ${{ needs.build.result }}"
+          echo "Unit Tests: ${{ needs.test-unit.result }}"
+          echo "E2E Tests: ${{ needs.test-e2e.result }}"
+          echo "Deploy: ${{ needs.deploy.result }}"
+          
+          if [[ "${{ needs.lint-and-format.result }}" != "success" || \
+                "${{ needs.type-check.result }}" != "success" || \
+                "${{ needs.build.result }}" != "success" || \
+                "${{ needs.test-unit.result }}" != "success" || \
+                "${{ needs.test-e2e.result }}" != "success" || \
+                "${{ needs.deploy.result }}" != "success" ]]; then
+            echo "❌ CI failed - one or more jobs did not succeed"
+            exit 1
+          else
+            echo "✅ All CI checks passed successfully!"
+          fi
