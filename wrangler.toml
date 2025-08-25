@@ -15,7 +15,7 @@ not_found_handling = "single-page-application"
 [[d1_databases]]
 binding = "DB"
 database_name = "web-app-starter-pack-db"
-database_id = "5550a6b1-dd4f-4cb6-bd0e-f0835504821e"
+database_id = "6c31a2e4-6dd6-4fec-84ca-290dc9d97c9e"
 
 # Optional: KV namespace for caching
 # [[kv_namespaces]]
