@@ -92,8 +92,13 @@ jobs:
 ## Database Strategy
 
 - **Production**: Uses production D1 database
-- **Preview**: Uses separate preview database or mocked data
-- Configure via environment variables in wrangler.toml
+- **Preview**: Uses the same production D1 database (read/write access)
+- **Important**: Must initialize production database before first deployment:
+  ```bash
+  # Run these once after creating the D1 database
+  npx wrangler d1 execute web-app-starter-pack-db --file=./db/schema.sql --remote
+  npx wrangler d1 execute web-app-starter-pack-db --file=./db/seed.sql --remote
+  ```
 
 ## Authentication
 
