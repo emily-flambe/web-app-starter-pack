@@ -69,15 +69,20 @@ jobs:
       
       - name: Comment PR with preview URL
         if: github.event_name == 'pull_request'
+        continue-on-error: true
         uses: actions/github-script@v7
         with:
           script: |
-            const sha = context.sha.substring(0, 8);
-            const previewUrl = `https://${sha}-web-app-starter-pack.workers.dev`;
-            
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body: `### Preview Deployment Ready\n\nYour changes have been deployed to: ${previewUrl}`
-            });
+            try {
+              const sha = context.sha.substring(0, 8);
+              const previewUrl = `https://${sha}-web-app-starter-pack.workers.dev`;
+              
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: `### Preview Deployment Ready\n\nYour changes have been deployed to: ${previewUrl}`
+              });
+            } catch (error) {
+              console.log('Could not comment on PR (expected for Dependabot PRs):', error.message);
+            }
