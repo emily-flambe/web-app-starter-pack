@@ -25,21 +25,19 @@ Add these secrets to your GitHub repository (Settings → Secrets → Actions):
 
 ## Pipeline Stages
 
-### 1. Quick Checks (Parallel)
+### 1. Build
+- Production build verification
+- Creates artifacts for all subsequent steps
+
+### 2. Parallel Execution
+After build completes, ALL of these run simultaneously:
 - **Lint & Format**: ESLint and Prettier checks
 - **Type Check**: TypeScript compilation
-
-### 2. Build
-- Production build verification
-- Creates artifacts for subsequent steps
-
-### 3. Parallel Execution
-After build completes, these run simultaneously:
 - **Unit Tests**: Vitest testing
 - **E2E Tests**: Chromium-only testing
 - **Deploy**: Preview deployment to Cloudflare Workers
 
-### 4. Final Status Check
+### 3. Final Status Check
 - Runs after all jobs complete
 - Fails if ANY job failed
 - Blocks PR merge on failure
@@ -75,8 +73,8 @@ npm run build      # Build check
 - Tests generate reports as artifacts
 
 ### Optimized Pipeline Order
-- Build runs after lint/type checks pass
-- Deploy and all tests run in parallel after build
+- Build runs first to create artifacts
+- ALL validation and deployment run in parallel after build
 - Final status check ensures all jobs succeed before merge
 
 ## Customization

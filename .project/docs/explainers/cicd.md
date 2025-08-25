@@ -12,15 +12,8 @@ The pipeline runs automatically on:
 
 ## Order of Operations
 
-### Step 1: Parallel Quick Checks
-**Lint & Format Check** and **TypeScript Check** run simultaneously. These are fast checks that catch basic issues:
-- **Linting** ensures code follows our style guidelines
-- **TypeScript** verifies all types are correct
-
-If either fails, the pipeline continues but the final status check will fail.
-
-### Step 2: Build
-Once the code passes basic checks, we build the application. This:
+### Step 1: Build
+We build the application first. This:
 - Bundles all the JavaScript/TypeScript
 - Processes CSS with Tailwind
 - Optimizes everything for production
@@ -28,8 +21,12 @@ Once the code passes basic checks, we build the application. This:
 
 The build artifacts are saved so later steps can reuse them.
 
-### Step 3: Parallel Testing and Deployment
-After the build completes, three things happen simultaneously:
+### Step 2: Parallel Validation and Deployment
+After the build completes, everything else runs simultaneously:
+
+**Lint & Format Check** - Ensures code follows our style guidelines and formatting rules.
+
+**TypeScript Check** - Verifies all types are correct and the code compiles without errors.
 
 **Unit Tests** - Test individual functions and components in isolation. They run on the source code directly.
 
@@ -43,9 +40,9 @@ After the build completes, three things happen simultaneously:
 - **Main branch**: Deploys to production at `web-app-starter-pack.workers.dev`
 - **Pull requests**: Creates preview deployments at unique URLs like `[version-id]-web-app-starter-pack.workers.dev`
 
-All three run in parallel to maximize speed. The deployment uses the same build artifacts, ensuring consistency.
+All five jobs run in parallel to maximize speed. The deployment uses the same build artifacts, ensuring consistency.
 
-### Step 4: Final Status Check
+### Step 3: Final Status Check
 After all jobs complete (pass or fail), a final status check runs. This job:
 - Checks the result of every previous job
 - Fails if ANY job failed
@@ -57,21 +54,19 @@ This ensures that even though we deploy before tests complete, we can't merge br
 
 This approach prioritizes speed and developer experience:
 
-1. **Fail fast on cheap operations**: Linting and type-checking are nearly instant. These run first to catch obvious issues.
+1. **Build first**: We build immediately to create artifacts that all subsequent steps need. This eliminates duplicate work.
 
-2. **Build early**: We build right after basic checks pass. This gives us artifacts that all subsequent steps can use.
+2. **Maximum parallelization**: ALL validation (linting, type-checking, tests) and deployment run simultaneously. This dramatically reduces total pipeline time.
 
-3. **Maximum parallelization**: Tests and deployment run simultaneously, not sequentially. This dramatically reduces total pipeline time.
-
-4. **Immediate preview deployments**: Developers get a preview URL as fast as possible, without waiting for tests. This enables:
+3. **Immediate preview deployments**: Developers get a preview URL as fast as possible, without waiting for tests. This enables:
    - Quick manual testing
    - Sharing with stakeholders
    - Visual verification
    - Real-world testing
 
-5. **Safety through final check**: The final status check ensures we can't merge broken code, even though we deployed before tests finished. If tests fail, the PR is blocked from merging.
+4. **Safety through final check**: The final status check ensures we can't merge broken code, even though we deployed before tests finished. If tests fail, the PR is blocked from merging.
 
-6. **Best of both worlds**: We get the speed of immediate deployment with the safety of comprehensive testing. Preview deployments can be "broken" temporarily, but main branch is always protected.
+5. **Best of both worlds**: We get the speed of immediate deployment with the safety of comprehensive testing. Preview deployments can be "broken" temporarily, but main branch is always protected.
 
 ## Configuration
 
@@ -100,18 +95,19 @@ npm run lint && npm run type-check && npm run test && npm run build && npm run t
 ## Time Expectations
 
 Typical pipeline duration:
-- Lint & TypeScript: ~30 seconds (parallel)
-- Unit tests: ~15 seconds
 - Build: ~20 seconds
-- E2E tests: ~45 seconds
-- Deploy: ~30 seconds
+- Then in parallel:
+  - Lint & TypeScript: ~30 seconds each
+  - Unit tests: ~15 seconds
+  - E2E tests: ~45 seconds
+  - Deploy: ~30 seconds
 
-Total: ~2-3 minutes from push to deployment
+Total: ~1 minute from push to deployment (build + longest parallel job)
 
 ## Key Benefits
 
-1. **Early feedback**: Know within 30 seconds if there are basic issues
-2. **No wasted compute**: Don't build or deploy broken code
+1. **Maximum speed**: Everything runs in parallel after build
+2. **No duplicate work**: Build once, use artifacts everywhere
 3. **Consistent deployments**: What you test is what you deploy
 4. **Preview deployments**: Every PR gets its own URL for testing
 5. **Confidence**: Multiple layers of testing before production
