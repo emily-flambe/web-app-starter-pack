@@ -186,18 +186,19 @@ page.on('console', msg => {
 
 ## Advanced Techniques
 
-### Running in Different Browsers
+### Running Tests
 
 ```typescript
-import { chromium, firefox, webkit } from 'playwright';
+import { chromium } from 'playwright';
 
-// Test in multiple browsers
-for (const browserType of [chromium, firefox, webkit]) {
-  const browser = await browserType.launch();
-  const page = await browser.newPage();
-  // Run tests
-  await browser.close();
-}
+// Run tests in Chromium (our primary test browser)
+const browser = await chromium.launch();
+const page = await browser.newPage();
+// Run tests
+await browser.close();
+
+// Note: While we only test on Chromium in CI, you can test locally
+// on other browsers if needed by importing firefox or webkit
 ```
 
 ### Mobile Device Emulation
