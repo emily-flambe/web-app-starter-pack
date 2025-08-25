@@ -80,7 +80,7 @@ npm run build      # Build check
 ## Customization
 
 ### Adjust Test Browsers
-Edit the matrix in `.github/workflows/ci.yml`:
+Edit the matrix in `.github/workflows/ci-cd.yml`:
 ```yaml
 matrix:
   browser: [chromium, firefox, webkit, edge]

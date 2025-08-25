@@ -70,7 +70,7 @@ This approach prioritizes speed and developer experience:
 
 ## Configuration
 
-The pipeline is defined in `.github/workflows/ci.yml`. It uses GitHub Actions and runs on Ubuntu Linux with Node.js 20.19+.
+The pipeline is defined in `.github/workflows/ci-cd.yml`. It uses GitHub Actions and runs on Ubuntu Linux with Node.js 20.19+.
 
 ## Local Testing
 
