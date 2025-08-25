@@ -227,7 +227,7 @@ jobs:
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: context.issue.number,
-                body: `### 🚀 Preview Deployment Ready\n\nYour changes have been deployed to:\n\n<a href="${previewUrl}" target="_blank" rel="noopener noreferrer">${previewUrl}</a>`
+                body: `### 🚀 Preview Deployment Ready\n\nYour changes have been deployed to:\n\n**${previewUrl}**\n\n_💡 Tip: Cmd/Ctrl + Click to open in a new tab_`
               });
             } catch (error) {
               console.log('Could not comment on PR (expected for Dependabot PRs):', error.message);
