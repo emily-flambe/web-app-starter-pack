@@ -40,12 +40,14 @@ jobs:
           path: dist/
           retention-days: 7
 
-  # Step 2: Deploy after build completes
+  # Path 1: Deploy and smoke test
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
     needs: [build]
     if: github.event_name == 'push' || github.event_name == 'pull_request'
+    outputs:
+      deployment_url: ${{ steps.deploy.outputs.deployment_url }}
     permissions:
       contents: read
       deployments: write
@@ -130,7 +132,6 @@ jobs:
               console.log('Could not comment on PR (expected for Dependabot PRs):', error.message);
             }
 
-  # Step 3: Smoke test to verify deployment is working
   smoke-test:
     name: Smoke Test Deployment
     runs-on: ubuntu-latest
@@ -153,13 +154,12 @@ jobs:
       
       - name: Run smoke tests
         run: |
-          # Determine the deployment URL
-          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            DEPLOYMENT_URL="https://web-app-starter-pack.workers.dev"
-          else
-            # For PRs, we need to extract the deployment URL from the deploy job
-            # This is a simplified approach - in production you'd pass this between jobs
-            DEPLOYMENT_URL="https://web-app-starter-pack.workers.dev"
+          # Use the deployment URL from the deploy job
+          DEPLOYMENT_URL="${{ needs.deploy.outputs.deployment_url }}"
+          
+          if [[ -z "$DEPLOYMENT_URL" ]]; then
+            echo "❌ No deployment URL available"
+            exit 1
           fi
           
           echo "Testing deployment at: $DEPLOYMENT_URL"
@@ -216,11 +216,11 @@ jobs:
           echo ""
           echo "🎉 All smoke tests passed!"
 
-  # Step 4a: Lint & Format Check (run in parallel after smoke test)
+  # Path 2: All tests run in parallel after build
   lint-and-format:
     name: Lint & Format Check
     runs-on: ubuntu-latest
-    needs: [smoke-test]
+    needs: [build]
     steps:
       - uses: actions/checkout@v4
       
@@ -239,11 +239,10 @@ jobs:
       - name: Check formatting
         run: npm run format -- --check
 
-  # Step 4b: Type checking (run in parallel after smoke test)
   type-check:
     name: TypeScript Check
     runs-on: ubuntu-latest
-    needs: [smoke-test]
+    needs: [build]
     steps:
       - uses: actions/checkout@v4
       
@@ -259,11 +258,10 @@ jobs:
       - name: Type check
         run: npm run type-check
 
-  # Step 4c: Unit tests (run in parallel after smoke test)
   test-unit:
     name: Unit Tests
     runs-on: ubuntu-latest
-    needs: [smoke-test]
+    needs: [build]
     steps:
       - uses: actions/checkout@v4
       
@@ -279,11 +277,10 @@ jobs:
       - name: Run unit tests
         run: npm run test
 
-  # Step 4d: E2E tests (run in parallel after smoke test)
   test-e2e:
     name: E2E Tests (chromium)
     runs-on: ubuntu-latest
-    needs: [smoke-test]
+    needs: [build]
     steps:
       - uses: actions/checkout@v4
       
@@ -319,7 +316,7 @@ jobs:
           path: playwright-report/
           retention-days: 30
 
-  # Step 5: Final status check (blocks PR merge if anything fails)
+  # Final status check - waits for both paths to complete
   ci-status:
     name: CI Status Check
     runs-on: ubuntu-latest
@@ -329,21 +326,28 @@ jobs:
       - name: Check overall status
         run: |
           echo "Checking status of all jobs..."
-          echo "Lint & Format: ${{ needs.lint-and-format.result }}"
-          echo "Type Check: ${{ needs.type-check.result }}"
+          echo ""
+          echo "=== Build Stage ==="
           echo "Build: ${{ needs.build.result }}"
-          echo "Unit Tests: ${{ needs.test-unit.result }}"
-          echo "E2E Tests: ${{ needs.test-e2e.result }}"
+          echo ""
+          echo "=== Path 1: Deployment Path ==="
           echo "Deploy: ${{ needs.deploy.result }}"
           echo "Smoke Test: ${{ needs.smoke-test.result }}"
+          echo ""
+          echo "=== Path 2: Testing Path ==="
+          echo "Lint & Format: ${{ needs.lint-and-format.result }}"
+          echo "Type Check: ${{ needs.type-check.result }}"
+          echo "Unit Tests: ${{ needs.test-unit.result }}"
+          echo "E2E Tests: ${{ needs.test-e2e.result }}"
+          echo ""
           
-          if [[ "${{ needs.lint-and-format.result }}" != "success" || \
-                "${{ needs.type-check.result }}" != "success" || \
-                "${{ needs.build.result }}" != "success" || \
-                "${{ needs.test-unit.result }}" != "success" || \
-                "${{ needs.test-e2e.result }}" != "success" || \
+          if [[ "${{ needs.build.result }}" != "success" || \
                 "${{ needs.deploy.result }}" != "success" || \
-                "${{ needs.smoke-test.result }}" != "success" ]]; then
+                "${{ needs.smoke-test.result }}" != "success" || \
+                "${{ needs.lint-and-format.result }}" != "success" || \
+                "${{ needs.type-check.result }}" != "success" || \
+                "${{ needs.test-unit.result }}" != "success" || \
+                "${{ needs.test-e2e.result }}" != "success" ]]; then
             echo "❌ CI failed - one or more jobs did not succeed"
             exit 1
           else
