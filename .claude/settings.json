@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "deny": [
+      "**/.env",
+      "**/.env.*",
+      "**/.dev.vars",
+      "**/credentials.json",
+      "**/secrets.*",
+      "**/*.pem",
+      "**/*.key",
+      "**/wrangler.toml:database_id"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npx prettier --write $CLAUDE_FILE_PATH"
+          }
+        ]
+      }
+    ]
+  }
+}
